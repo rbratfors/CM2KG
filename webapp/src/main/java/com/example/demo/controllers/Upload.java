@@ -323,13 +323,7 @@ public class Upload {
 			}
 			
 			archiUtil.setFile(tmpFile);
-			/*
-			UUID uuid = UUID.randomUUID();
-			String uid = uuid.toString();
-			String filename = "export/" + uid + ".graphml";
-			*/
 			String fileUid = archiUtil.transform();
-			// File outputFile = archiUtil.getFile();
 			
 			String outputContent = archiUtil.getGraphXML();
 			//System.out.println(outputContent);
@@ -399,17 +393,7 @@ public class Upload {
 			    model.addAttribute("modelVersions", versions);
 			    System.out.println("versions set");
 			}
-
-			/*
-			 * maybe reconstruct each version and pass that?
-			String[] deltas = archiUtil.getDeltas();
-			int i = 0;
-			for(String delta : deltas) {
-				redirectAttributes.addFlashAttribute("delta" + i, delta);
-				i++;
-			}
-			redirectAttributes.addFlashAttribute("numOfDeltas", i);
-			*/
+			
 			return "redirect:/upload/historypreview";
 
 	} catch (IOException e) {
@@ -461,11 +445,6 @@ public class Upload {
 				}
 				
 				archiUtil.setFile(tmpFile);
-				/*
-				UUID uuid = UUID.randomUUID();
-				String uid = uuid.toString();
-				String filename = "export/" + uid + ".graphml";
-				*/
 				String fileUid = archiUtil.transform();
 				// File outputFile = archiUtil.getFile();
 				
@@ -540,17 +519,6 @@ public class Upload {
 				    System.out.println("versions set");
 				}
 				
-
-				/*
-				 * maybe reconstruct each version and pass that?
-				String[] deltas = archiUtil.getDeltas();
-				int i = 0;
-				for(String delta : deltas) {
-					redirectAttributes.addFlashAttribute("delta" + i, delta);
-					i++;
-				}
-				redirectAttributes.addFlashAttribute("numOfDeltas", i);
-				*/
 				return "redirect:/upload/historypreview";
 	
 		} catch (IOException e) {
