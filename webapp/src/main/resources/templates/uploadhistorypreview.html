@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+  <head>
+  	<title>EA Graph Analysis</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+  	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+		/*
+		#tree .entry span:hover + .branch .entry::after,
+		#tree .entry span:hover + .branch .entry::before,
+		#tree .entry span:hover + .branch::before,
+		#tree .entry span:hover + .branch .branch::before {
+		  border-color: #a6a6a6;
+		}*/
+          #timeline-container {
+          	height: 32rem; 
+          	overflow: auto; 
+          	padding: 0 2rem; 
+          	width: 66rem;
+          	background: #DCDCDC;
+          	margin-top: 1rem;
+          }
+        #box1 {
+        	display: flex;
+			width: 14rem;
+			height: 32rem;
+			padding: 0 2rem;
+			float: left;
+			background: #DCDCDC;
+			align-items: center;
+			flex-flow: column;
+			margin-right: 1rem;
+		}
+		
+		.innerbox1 {
+			display: flex;
+			align-items: center;
+			flex-direction: column;
+			gap: 15rem;
+		}
+		
+		#box2 {
+			width: 56rem;
+			height: 42rem;
+			padding: 0 2rem;
+			float: left;
+			background: #DCDCDC;
+			margin-right: 1rem;
+			margin-bottom: 1rem;
+		}
+		#box3 {
+			width: 24rem;
+			height: 42rem;
+			padding: 0 2rem;
+			float: left;
+			background: #DCDCDC;
+			margin-bottom: 1rem;
+		}
+		.button-box {
+			padding: 0.5rem;
+			display: flex;
+			justify-content: space-around;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.25rem;
+		}
+		.button-17 {
+		  align-items: center;
+		  appearance: none;
+		  background-color: #fff;
+		  border-radius: 24px;
+		  border-style: none;
+		  box-shadow: rgba(0, 0, 0, .2) 0 3px 5px -1px,rgba(0, 0, 0, .14) 0 6px 10px 0,rgba(0, 0, 0, .12) 0 1px 18px 0;
+		  box-sizing: border-box;
+		  color: #3c4043;
+		  cursor: pointer;
+		  display: inline-flex;
+		  fill: currentcolor;
+		  font-family: "Google Sans",Roboto,Arial,sans-serif;
+		  font-size: 14px;
+		  font-weight: 500;
+		  height: 2rem;
+		  justify-content: center;
+		  letter-spacing: .25px;
+		  line-height: normal;
+		  max-width: 100%;
+		  overflow: visible;
+		  padding: 2px 10px;
+		  position: relative;
+		  text-align: center;
+		  text-transform: none;
+		  transition: box-shadow 280ms cubic-bezier(.4, 0, .2, 1),opacity 15ms linear 30ms,transform 270ms cubic-bezier(0, 0, .2, 1) 0ms;
+		  user-select: none;
+		  -webkit-user-select: none;
+		  touch-action: manipulation;
+		  width: 14em;
+		  will-change: transform,opacity;
+		  z-index: 0;
+		}
+		
+		.button-17:hover {
+		  background: #F6F9FE;
+		  color: #174ea6;
+		}
+		
+		.button-17:active {
+		  box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%), 0 8px 12px 6px rgb(60 64 67 / 15%);
+		  outline: none;
+		}
+		
+		.button-17:focus {
+		  outline: none;
+		  border: 2px solid #4285f4;
+		}
+		
+		.button-17:not(:disabled) {
+		  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+		}
+		
+		.button-17:not(:disabled):hover {
+		  box-shadow: rgba(60, 64, 67, .3) 0 2px 3px 0, rgba(60, 64, 67, .15) 0 6px 10px 4px;
+		}
+		
+		.button-17:not(:disabled):focus {
+		  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+		}
+		
+		.button-17:not(:disabled):active {
+		  box-shadow: rgba(60, 64, 67, .3) 0 4px 4px 0, rgba(60, 64, 67, .15) 0 8px 12px 6px;
+		}
+		
+		.button-17:disabled {
+		  box-shadow: rgba(60, 64, 67, .3) 0 1px 3px 0, rgba(60, 64, 67, .15) 0 4px 8px 3px;
+		}
+		
+@import url('https://fonts.googleapis.com/css?family=Roboto+Condensed');
+/* 
+  reset the list elements first (normalize)
+*/
+
+ul, li {
+  margin:0;
+  padding: 0;
+  
+}
+span::first-letter{
+    text-transform: capitalize;
+}
+
+/* START TIMELINE 
+ the width of the list parent is optional 
+if you set this width 
+A hover sample effect is added as well as an active state*/
+
+.base-timeline {
+	padding: 15em 5em 15em 5em;
+    list-style-type: none;
+    counter-reset: number -1; /* number 2021*/
+    position: relative;
+    display: flex;
+    z-index: 2;
+    flex-flow: nowrap;
+  	width: 5em; 
+}
+
+.line {
+      content: '';
+      width: 100%;
+      border-top: 5px solid steelblue;
+      border-left: 5px solid steelblue;
+      display: inline-block;
+      position: relative;
+      margin-left: 60px;
+      top: 50%;
+      z-index: -1;
+}
+
+.branch-timeline {
+    list-style-type: none;
+    counter-reset: number -1; /* number 2021*/
+    position: relative;
+    display: flex;
+    z-index: 2;
+    flex-flow: nowrap;
+  	top: -368px;
+  	left: 438px;
+  	width: 50%;
+}
+
+.branch-timeline::before {
+      content: '';
+      width: 80%;
+      height: 170%;
+      border-top: 2px solid orange;
+      border-left: 2px solid orange;
+      display: inline-block;
+      position: absolute;
+      left: 3.9%;
+      top: 50%;
+      z-index: -1;
+
+}
+
+.base-timeline__item {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+}
+
+.base-timeline__item .line {
+	content: '';
+    width: 62%;
+    border-top: 2px solid steelblue;
+    border-left: 2px solid steelblue;
+    display: inline-block;
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    z-index: -1;
+    opacity: 1;
+}
+
+.base-timeline__item::after {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        counter-increment: number; /* number -1*/
+        content: counter(number) ''; 
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        background-color: steelblue;
+        color: white;
+        font-weight: bold;
+        transition: all 0.6s ease-in-out;
+        box-sizing: border-box;      
+}
+
+/* modifier with use of the data-year attribute */
+.base-timeline__item--data::before {
+  content: attr(data-year);
+  width: 60px;
+  height: 60px;
+}
+
+/* hover element */
+.base-timeline__item:hover::before {
+     background-color: rgba( 225, 114, 114, .9);
+}
+
+
+.base-timeline__item--active::before {
+      background-color: rgba( 225, 114, 114, .9);
+      border: 2px solid;
+      border-color: rgba( 0, 0, 0, .3);
+      
+      
+}
+
+.branch-timeline__item {
+      position: relative;
+      display: inline-block;
+      width: calc(100% / 3 - 15px); /* change width */
+}
+
+.branch-timeline__item::before {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        counter-increment: number; /* number -1*/
+        content: counter(number) ''; 
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        background-color: orange;
+        color: white;
+        font-weight: bold;
+        transition: all 0.6s ease-in-out;
+        box-sizing: border-box;
+        
+}
+
+/* modifier with use of the data-year attribute */
+.branch-timeline__item--data::before {
+  content: attr(data-year);
+  width: 60px;
+  height: 60px;
+}
+
+/* hover element */
+.branch-timeline__item:hover::before {
+     background-color: rgba( 225, 114, 114, .9);
+}
+
+
+.branch-timeline__item--active::before {
+      background-color: rgba( 225, 114, 114, .9);
+      border: 2px solid;
+      border-color: rgba( 0, 0, 0, .3);
+      
+      
+}
+    
+.tooltip {
+    opacity: 0;
+    z-index: 300;
+    color: #bbb;
+    width: 190px;
+    display: block;
+    font-size: 11px;
+    padding: 5px 0px;
+    border-radius: 3px;
+    text-align: center;
+    text-shadow: 1px 1px 2px #111;
+    background: rgba(51,51,51,0.9);
+    border: 1px solid rgba(34,34,34,0.9);
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+    -webkit-transition: all .2s ease-in-out;
+    -moz-transition: all .2s ease-in-out;
+    -o-transition: all .2s ease-in-out;
+    -ms-transition: all .2s ease-in-out;
+    transition: all .2s ease-in-out;
+    -webkit-transform: scale(0);
+    -moz-transform: scale(0);
+    -o-transform: scale(0);
+    -ms-transform: scale(0);
+    transform: scale(0);
+    position: absolute;
+    bottom: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    left: -70px;
+}
+
+.tooltip:before,.tooltip:after {
+    content: '';
+    z-index: 300;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid rgba(51,51,51,0.9);
+    position: absolute;
+    bottom: -10px;
+    left: 43%;
+}
+
+.base-timeline__item:hover .tooltip {
+    opacity: 1;
+    z-index: 500;
+    -webkit-transform: scale(1);
+    -moz-transform: scale(1);
+    -o-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+}
+
+.tooltip2 {
+    opacity: 0;
+    z-index: 99;
+    color: #bbb;
+    width: 190px;
+    display: block;
+    font-size: 11px;
+    padding: 5px 0px;
+    border-radius: 3px;
+    text-align: center;
+    text-shadow: 1px 1px 2px #111;
+    background: rgba(51,51,51,0.9);
+    border: 1px solid rgba(34,34,34,0.9);
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+    -webkit-transition: all .2s ease-in-out;
+    -moz-transition: all .2s ease-in-out;
+    -o-transition: all .2s ease-in-out;
+    -ms-transition: all .2s ease-in-out;
+    transition: all .2s ease-in-out;
+    -webkit-transform: scale(0);
+    -moz-transform: scale(0);
+    -o-transform: scale(0);
+    -ms-transform: scale(0);
+    transform: scale(0);
+    position: absolute;
+    right: -20px;
+    bottom: 50px;
+}
+
+.tooltip2:before,.tooltip2:after {
+    content: '';
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid rgba(51,51,51,0.9);
+    position: absolute;
+    bottom: -10px;
+    left: 43%;
+}
+
+.branch-timeline__item:hover .tooltip2 {
+    opacity: 1;
+    -webkit-transform: scale(1);
+    -moz-transform: scale(1);
+    -o-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+}
+
+.searchBar {
+  width: 100%;
+  display: flex;
+}
+
+.wrapper {
+  width: 100%;
+  max-width: 31.25rem;
+}
+
+#searchQueryInput {
+  width: 100%;
+  height: 2rem;
+  background: #f5f5f5;
+  outline: none;
+  border: none;
+  border-radius: 1.625rem;
+  padding: 0 3.5rem 0 1.5rem;
+  font-size: 1rem;
+}
+
+#searchQuerySubmit {
+  width: 3.5rem;
+  height: 2rem;
+  margin-left: -3.5rem;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+#searchQuerySubmit:hover {
+  cursor: pointer;
+}
+
+    </style>
+    </head>
+    <body onload="init()">
+    	<div id="box1">
+    		<div class = "innerbox1">
+    		<h4 style="font-family: Arial" th:text="${current.modelID}"></h4>
+    		</div>
+    		<div class = "innerbox1">
+	    		<div class = "button-box">
+	    		<button class="button-17">Compare to first version</button>
+	    		<button class="button-17">Compare to latest version</button>
+	    		<button class="button-17">Compare to parent</button>
+	    		</div>
+	    		<div class = "button-box" style="margin-top:-6em;">
+	    		<form th:action="@{/upload/fromhistorypreview}" method="post" enctype="multipart/form-data">
+					<table>
+						<div class="form-group">
+							<input type="file" name="mFile" class="form-control-file" id="exampleFormControlFile1">
+						</div>
+						
+						<button type="submit" id="branchBtn" class="button-17" value="" name="rect" onclick="updateRect()">Branch from selected</button>
+						<button type="submit" id="updateBtn" class="button-17" value="" name="rect" style="margin-top:0.25em">Update selected branch</button>
+					</table>
+				</form>
+	    		<a th:href="@{/uploadhistory}"><button class="button-17" style="margin-top:1em">Historization menu</button></a>
+	    		</div>
+    		</div>
+        </div>
+        <div id="timeline-container">
+        	<button class="button-17" style="position:absolute; z-index: 5; margin-top:0.5em; width: 7em; opacity:0.9" onClick="scrollToFirst()">First</button>
+	    	<button class="button-17" style="position:absolute; z-index: 5; margin-top:3em; width: 7em; opacity:0.9" onClick="scrollToLast()">Latest</button>
+	    	<button class="button-17" style="position:absolute; z-index: 5; margin-top:5.5em; width: 7em; opacity:0.9" onClick="scrollToSelected()">Selected</button>
+	    	<div class="wrapper">
+			  <div class="searchBar" style="position:absolute; z-index: 5; margin-top:0.5em; margin-left: 8em; width: 13em; opacity:0.9">
+			    <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Version Number" value="" />
+			    <button id="searchQuerySubmit" type="submit" name="searchQuerySubmit" onClick="scrollToSearched()">
+			      <svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="#666666" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" />
+			      </svg>
+			    </button>
+			  </div>
+			</div>
+            <ul class="base-timeline" id="baseTimeline">
+            	<!--  <li class="line" th:each="version,iter : ${modelVersions}"></li> -->
+            	<li class="base-timeline__item" th:each="version,iter : ${modelVersions}" onclick="setSelectedElement(event)" th:id="${version.version}">
+            	<span class="line" th:id="${version.uid}"></span>
+            	<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
+            	</li>
+            </ul>	
+
+			<ul class="branch-timeline" id="branchboy">
+            	<li class="branch-timeline__item"><span class="tooltip2">dd3a529f_b2_v1<br>Upload date: 2022-02-16<br>5 added nodes<br>7 added edges<br>4 modified nodes<br>2 removed nodes<br>2 removed edges</span></li>
+            	<li class="branch-timeline__item"><span class="tooltip2">dd3a529f_b2_v2<br>Upload date: 2022-02-16<br>2 added nodes<br>1 added edge</span></li>
+            	<li class="branch-timeline__item"><span class="tooltip2">dd3a529f_b2_v3<br>Upload date: 2022-02-18<br>1 removed node<br>1 removed edge</span></li>
+            	<li class="branch-timeline__item"><span class="tooltip2">dd3a529f_b2_v4<br>Upload date: 2022-02-18<br>1 added node<br>1 added edge<br>2 removed nodes<br>1 removed edge</span></li>
+            	<li class="branch-timeline__item"><span class="tooltip2">dd3a529f_b2_v5<br>Upload date: 2022-02-19<br>2 modified nodes<br>1 removed edge</span></li>
+			</ul>
+			
+        </div>
+        
+	        <div class = "button-box" style="flex-direction: row; width: 40em">
+	        	<p id="selectedVersionText"></p>
+	    		<a class="button-17" style="background-color:steelblue;color:white" th:href="@{/repository/graph//{uid}/neo4j(uid=${fileUid})}">View in Neo4j</a>
+	    		<button class="button-17" style="background-color:steelblue;color:white" href="#" id="download">Download GraphML</button>
+		    </div>
+		<div id="box2" style="overflow: auto">
+		<xmp id="inputPreview"></xmp>
+        </div>
+        <div id="box3">
+            <form th:action="@{/upload/historypreview}" method="post" enctype="multipart/form-data" th:object="${formdata}">
+						<div class="form-group">
+							<label for="startdate">Earliest Update:</label><br>
+							<input type="date" name="startdate" id="startdate"><br>
+							<label for="timerange">Latest Update:</label><br>
+							<input type="date" name="enddate" id="enddate"><br>
+							
+							<tr th:each="data, itemStat : ${attributes}">
+						        <td th:text="${attributeNames[__${itemStat.index}__]}"></td><br>
+								<input type="text" name="${attributeNames[__${itemStat.index}__]}" th:field="${formdata.attributes[__${itemStat.index}__]}"><br>
+						    </tr>
+						    
+							<label for="smell">Smell:</label><br>
+							<select id="smell" name="smell">
+							  	<option value=""></option>
+								<option value="s1">Smell 1</option>
+								<option value="s2">Smell 2</option>
+								<option value="s3">Smell 3</option>
+							</select><br>
+							<label for="function">Function:</label><br>
+							<select id="function" name="function">
+								<option value=""></option>
+								<option value="f1">Function 1</option>
+								<option value="f2">Function 2</option>
+								<option value="f3">Function 3</option>
+							</select><br>
+							<label for="vers">Version:</label>
+							<select class="form-control" id="vers" name="vers">
+						        <option th:each="version : ${versions}"
+									th:value="${version.uid}"
+									th:text="${version.uid}">
+								</option>
+						    </select>
+						    
+						</div>
+						
+						<div style="display:flex;justify-content:center;justify-content:space-evenly">
+							<button type="submit" name="action" id="queryCurrentBtn" th:value="single" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query Selected</button>
+							<button type="submit" name="action" id="queryAllBtn" th:value="all" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query All</button>
+						</div>
+				</form>
+        </div>
+        
+        <script th:inline="javascript">
+        
+        /*<![CDATA[*/
+		var modelVersions = [[${modelVersions}]];
+		/*]]>*/
+		
+		 /*<![CDATA[*/
+		var coords = [[${coords}]];
+		/*]]>*/
+		var numOfVersions = modelVersions.length;
+		var selectedVersion = modelVersions[numOfVersions-1];
+		
+		var selectedRect = document.getElementById(numOfVersions-1).getBoundingClientRect();
+		
+		updateRect();
+		
+        function deffy() {
+        	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
+        	var versionNumber = selectedVersion.version;
+        	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
+        }
+        
+        function updateRect() {
+        	document.getElementById("branchBtn").value = selectedRect.top + " " + selectedRect.left;
+        }
+        
+        function setSelectedElement(e) {
+        	var selectedElement = e.target || e.srcElement;
+        	
+        	selectedRect = selectedElement.getBoundingClientRect();
+        	
+        	selectedVersion = modelVersions[parseInt(selectedElement.id)];
+        	
+        	deffy();
+        	
+        }
+        
+        function init() {
+        	
+        	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
+        	var versionNumber = selectedVersion.version;
+        	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
+        	
+        	modelVersions.forEach(setOpacity);
+        	
+        	var baseTimelineStyle = document.getElementById('baseTimeline').style;
+        	var w = 200+numOfVersions*100;
+        	baseTimelineStyle.width = w+'px';
+        	
+        	
+        	var firstLine = document.getElementById(modelVersions[0].uid).style;
+        	firstLine.opacity = 0;
+        	
+        	if(!coords) {
+        		return;
+        	}
+        	
+        	return;
+        	var branchStyle = document.getElementById('branchboy').style;
+        	alert(branchStyle.left);
+        	branchStyle.left = coords[0]+'px';
+        	branchStyle.top = coords[1];
+        }
+        
+        function setOpacity(version) {
+        	var elStyle = document.getElementById(version.version).style;
+        	if(version.matched) {
+        		elStyle.opacity = 1;
+        	}
+        	else {
+        		elStyle.opacity = 0.4;
+        	}
+        }
+        
+        function scrollToFirst() {
+        	let first = modelVersions[0].version;
+        	document.getElementById(first).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+        
+        function scrollToLast() {
+        	let last = modelVersions[modelVersions.length-1].version;
+        	document.getElementById(last).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+        
+        function scrollToSelected() {
+        	document.getElementById(selectedVersion.version).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+        
+        function scrollToSearched() {
+        	var id = document.getElementById("searchQueryInput").value;
+        	
+        	document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+        
+        function clicked(a) {
+        	/*<![CDATA[*/
+    		
+    		var ya = /*[[${versions}]]*/ 'default';
+    		console.log(ya);
+    		
+    		/*]]>*/
+			var content = ya[21-a].content;
+			var xml = String(content).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+			document.getElementById('inputPreview').innerHTML = xml;
+        }
+		
+		function loadText() {
+			var xml = String(ye).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+			document.getElementById('inputPreview').innerHTML = xml;
+		}
+		
+        document.addEventListener('DOMContentLoaded', function () {
+                const ele = document.getElementById('timeline-container');
+                ele.style.cursor = 'grab';
+
+                let pos = { top: 0, left: 0, x: 0, y: 0 };
+
+                const mouseDownHandler = function (e) {
+                    ele.style.cursor = 'grabbing';
+                    ele.style.userSelect = 'none';
+
+                    pos = {
+                        left: ele.scrollLeft,
+                        top: ele.scrollTop,
+                        // Get the current mouse position
+                        x: e.clientX,
+                        y: e.clientY,
+                    };
+
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('mouseup', mouseUpHandler);
+                };
+
+                const mouseMoveHandler = function (e) {
+                    // How far the mouse has been moved
+                    const dx = e.clientX - pos.x;
+                    const dy = e.clientY - pos.y;
+
+                    // Scroll the element
+                    ele.scrollTop = pos.top - dy;
+                    ele.scrollLeft = pos.left - dx;
+                };
+
+                const mouseUpHandler = function () {
+                    ele.style.cursor = 'grab';
+                    ele.style.removeProperty('user-select');
+
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+                    document.removeEventListener('mouseup', mouseUpHandler);
+                };
+
+                // Attach the handler
+                ele.addEventListener('mousedown', mouseDownHandler);
+            });
+        
+	    function getElement(e) {
+	            var selectedElement = e.target || e.srcElement;
+	            alert(selectedElement.id);
+	        }
+	    
+		function clickTest() {
+			  alert(selectedVersion.uid);
+			}
+        	
+		$("#download").click(function () {
+			var fileContent = selectedVersion.content;
+			var bb = new Blob([fileContent], {type: 'text/plain'});
+			var a = document.createElement('a');
+			a.download = 'output.graphml';
+			a.href = window.URL.createObjectURL(bb);
+			a.click();
+		});
+		</script>
+    </body>
+</html>

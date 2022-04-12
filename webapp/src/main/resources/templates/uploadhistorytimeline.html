@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>Tree Example</title>
+
+    <style>
+@import url('https://fonts.googleapis.com/css?family=Roboto+Condensed');
+/* 
+  reset the list elements first (normalize)
+*/
+
+ul, li {
+  margin:0;
+  padding: 0;
+  
+}
+span::first-letter{
+    text-transform: capitalize;
+}
+
+body {
+  font-family: 'Roboto Condensed', serif;
+}
+
+/* START TIMELINE 
+ the width of the list parent is optional 
+if you set this width 
+A hover sample effect is added as well as an active state*/
+
+.base-timeline {
+    list-style-type: none;
+    counter-reset: number; /* number 2021*/
+    position: relative;
+    display: block;
+    z-index: 2;
+    width: 75%; /* change or remove*/
+  
+}
+
+.base-timeline::before {
+      content: '';
+      width: 100%;
+      border-top: 2px solid steelblue;
+      display: inline-block;
+      position: absolute;
+      top: 50%;
+      z-index: -1;
+
+}
+
+/* set width of time-line this can be px, percentage or other unit
+3 is the number of list items minus 1 when using percentage
+*/
+.base-timeline__item {
+      position: relative;
+      display: inline-block;
+      width: calc(100% / 3 - 15px); /* change width */
+}
+
+.base-timeline__item::before {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        counter-increment: number; /* number -1*/
+        content: counter(number) ''; 
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        background-color: steelblue;
+        color: white;
+        font-weight: bold;
+        transition: all 0.6s ease-in-out;
+        box-sizing: border-box;
+        
+}
+
+/* modifier with use of the data-year attribute */
+.base-timeline__item--data::before {
+  content: attr(data-year);
+  width: 60px;
+  height: 60px;
+}
+
+/* hover element */
+.base-timeline__item:hover::before {
+     background-color: rgba( 225, 114, 114, .9);
+     transform: scale(2);
+      
+}
+
+.base-timeline__item--active::before {
+      background-color: rgba( 225, 114, 114, .9);
+      border: 2px solid;
+      border-color: rgba( 0, 0, 0, .3);
+      
+      
+}
+
+.base-timeline__item:last-child {
+      width: 0;
+}
+
+/* summary text is optional and can be anything */
+
+.base-timeline__summary-text {
+      position: absolute;
+      bottom: -2em; 
+      left:5px;
+    }
+
+
+
+	
+
+    </style>
+
+  </head>
+
+  <body>
+
+<ul class="base-timeline">
+  <li class="base-timeline__item">
+    <span class="base-timeline__summary-text">one</span></li>
+  <li class="base-timeline__item">
+    <span class="base-timeline__summary-text">two</span></li>
+  <li class="base-timeline__item">
+    <span class="base-timeline__summary-text">three</span></li>
+  <li class="base-timeline__item">
+    <span class="base-timeline__summary-text">four</span></li>
+</ul>
+
+
+
+<!-- load the d3.js library -->	
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+	
+<script>
+
+/*<![CDATA[*/
+
+var message = /*[[${message}]]*/ 'default';
+console.log(message);
+
+/*]]>*/
+
+
+</script>
+	
+	
+	
+  </body>
+</html>
