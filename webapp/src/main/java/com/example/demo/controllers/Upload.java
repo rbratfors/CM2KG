@@ -28,13 +28,13 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import at.ac.tuwien.big.msm.cmgba.graphml.ADOxxUtility;
-import at.ac.tuwien.big.msm.cmgba.graphml.ArchiUtility;
-import at.ac.tuwien.big.msm.cmgba.graphml.HistoryUtility;
-import at.ac.tuwien.big.msm.cmgba.graphml.ModelGraph;
-//import at.ac.tuwien.big.msm.cmgba.graphml.OwlUtility;
-import at.ac.tuwien.big.msm.cmgba.graphml.PapyrusUMLUtility;
-import at.ac.tuwien.big.msm.cmgba.graphml.Querying;
+import utilities.ModelGraph;
+import graphDb.neo4jGraphmlImport;
+import utilities.ADOxxUtility;
+import utilities.ArchiUtility;
+import utilities.HistoryUtility;
+import utilities.PapyrusUMLUtility;
+import utilities.Querying;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -291,7 +291,7 @@ public class Upload {
 		redirectAttributes.addAttribute("version", version);
 		redirectAttributes.addFlashAttribute("uid", uid);
 		
-		at.ac.tuwien.big.msm.cmgba.graphml.neo4jGraphmlImport neoImport = new at.ac.tuwien.big.msm.cmgba.graphml.neo4jGraphmlImport(uid);
+		neo4jGraphmlImport neoImport = new neo4jGraphmlImport(uid);
 		neoImport.initializeGraph();
 
 		return "neovispreview_v2";
@@ -545,15 +545,15 @@ public class Upload {
 	}
 	
 	@PostMapping(value = "upload/fromhistorypreview")
-	public String branchFromSelected(@RequestParam("mFile") MultipartFile mFile,@RequestParam("rect") String rect,@ModelAttribute("modelVersions") ModelGraph[] modelVersions,RedirectAttributes redirectAttributes,Model model) {
+	public String branchFromSelected(@RequestParam("mFile") MultipartFile mFile,@RequestParam("update") String updateButton,@ModelAttribute("modelVersions") ModelGraph[] modelVersions,RedirectAttributes redirectAttributes,Model model) {
 		System.out.println("hello");
 		try {
 			HistoryUtility historyUtil = new HistoryUtility();
 			ArchiUtility archiUtil = new ArchiUtility();
 			String content = new String(mFile.getBytes());
 			float[] branchCoords = new float[2];
-			if(!rect.isEmpty())
-				branchCoords = historyUtil.getBranchCoords(rect);
+			if(!updateButton.isEmpty())
+				branchCoords = historyUtil.getBranchCoords(updateButton);
 			System.out.println("RECT: " + branchCoords[0] + ","  + branchCoords[1]);
 			// System.out.println(content);
 			redirectAttributes.addFlashAttribute("coords", branchCoords);
@@ -578,6 +578,7 @@ public class Upload {
 			redirectAttributes.addFlashAttribute("fileUid", fileUid);
 			redirectAttributes.addFlashAttribute("outputcontent", outputContent);
 			
+			historyUtil.countHistories("Yo");
 			int numOfVersions = archiUtil.version;
 			System.out.println("VERSIONS: " + numOfVersions);
 			int i = fileUid.indexOf("_v");
@@ -830,7 +831,7 @@ public class Upload {
 		System.out.println("Version: " + uid);
 		redirectAttributes.addFlashAttribute("uid", uid);
 		redirectAttributes.addFlashAttribute("versions", versionIDs);
-		at.ac.tuwien.big.msm.cmgba.graphml.neo4jGraphmlImport neoImport = new at.ac.tuwien.big.msm.cmgba.graphml.neo4jGraphmlImport();
+		neo4jGraphmlImport neoImport = new neo4jGraphmlImport(uid);
 		neoImport.initializeGraph();
 
 		return "neovispreview";

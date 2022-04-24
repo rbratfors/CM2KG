@@ -226,7 +226,22 @@ A hover sample effect is added as well as an active state*/
     opacity: 1;
 }
 
-.base-timeline__item::after {
+.base-timeline__item .circle {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        content: 1; 
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        background-color: steelblue;
+        color: white;
+        font-weight: bold;
+        transition: all 0.6s ease-in-out;
+        box-sizing: border-box;      
+}
+
+.base-timeline__item .circle::before {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -273,8 +288,7 @@ A hover sample effect is added as well as an active state*/
         display: flex;
         justify-content: center;
         align-items: center;
-        counter-increment: number; /* number -1*/
-        content: counter(number) ''; 
+        content: 1; 
         border-radius: 50%;
         width: 40px;
         height: 40px;
@@ -349,7 +363,7 @@ A hover sample effect is added as well as an active state*/
     left: 43%;
 }
 
-.base-timeline__item:hover .tooltip {
+.base-timeline__item .circle:hover .tooltip {
     opacity: 1;
     z-index: 500;
     -webkit-transform: scale(1);
@@ -461,8 +475,8 @@ A hover sample effect is added as well as an active state*/
 							<input type="file" name="mFile" class="form-control-file" id="exampleFormControlFile1">
 						</div>
 						
-						<button type="submit" id="branchBtn" class="button-17" value="" name="rect" onclick="updateRect()">Branch from selected</button>
-						<button type="submit" id="updateBtn" class="button-17" value="" name="rect" style="margin-top:0.25em">Update selected branch</button>
+						<button type="submit" id="branchBtn" class="button-17" value="" name="update" onclick="branchButton()">Branch from selected</button>
+						<button type="submit" id="updateBtn" class="button-17" value="" name="update" onclick="updateButton()" style="margin-top:0.25em">Update selected branch</button>
 					</table>
 				</form>
 	    		<a th:href="@{/uploadhistory}"><button class="button-17" style="margin-top:1em">Historization menu</button></a>
@@ -484,9 +498,11 @@ A hover sample effect is added as well as an active state*/
 			</div>
             <ul class="base-timeline" id="baseTimeline">
             	<!--  <li class="line" th:each="version,iter : ${modelVersions}"></li> -->
-            	<li class="base-timeline__item" th:each="version,iter : ${modelVersions}" onclick="setSelectedElement(event)" th:id="${version.version}">
-            	<span class="line" th:id="${version.uid}"></span>
+            	<li class="base-timeline__item" th:each="version,iter : ${modelVersions}">
+            	<span class="circle" th:id="${version.version}" onclick="setSelectedElement(event)">
             	<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
+            	</span>
+            	<span class="line" th:id="${version.uid}"></span>
             	</li>
             </ul>	
         </div>
@@ -565,8 +581,12 @@ A hover sample effect is added as well as an active state*/
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
         }
         
-        function updateRect() {
+        function branchButton() {
         	document.getElementById("branchBtn").value = selectedRect.top + " " + selectedRect.left;
+        }
+        
+        function updateButton() {
+        	document.getElementById("updateBtn").value = selectedRect.top + " " + selectedRect.left;
         }
         
         function setSelectedElement(e) {
@@ -580,13 +600,22 @@ A hover sample effect is added as well as an active state*/
         	
         }
         
+        function modelFuncs(version) {
+        	setOpacity(version);
+        }
+        
+        function setCircleContents(version) {
+        	var elStyle = document.getElementById(version.version).style;
+        	elStyle.content = version.version;
+        }
+        
         function init() {
         	
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
         	var versionNumber = selectedVersion.version;
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
         	
-        	modelVersions.forEach(setOpacity);
+        	modelVersions.forEach(modelFuncs);
         	
         	var baseTimelineStyle = document.getElementById('baseTimeline').style;
         	var w = 200+numOfVersions*100;

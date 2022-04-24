@@ -31,7 +31,7 @@ public class ADOxxUtility {
 
 			// if no filename is provided do not create file
 			if (!filename.equals(""))
-				outputFile = modelExporter.saveFile(filename);
+				outputFile = modelExporter.saveFile(filename, false);
 
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
