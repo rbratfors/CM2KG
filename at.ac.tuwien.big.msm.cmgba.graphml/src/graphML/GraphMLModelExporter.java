@@ -68,6 +68,19 @@ public class GraphMLModelExporter {
 		dataKeys = new HashMap<>();
 	}
 	
+	public GraphMLModelExporter(String content) {
+		graphOutput = content;
+		
+		dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");  
+		now = LocalDateTime.now();  
+		dataKeysXML = new StringBuilder(); 
+		//this.dataKeysXML.append("<key id=\"ClassName\" for=\"node\" attr.name=\"ClassName\" attr.type=\"string\"/> \r\n");
+		//this.dataKeysXML.append("<key id=\"ClassName\" for=\"edge\" attr.name=\"ClassName\" attr.type=\"string\"/> \r\n");
+		
+		dataKeys = new HashMap<>();
+	}
+	
+	
 	public GraphMLModelExporter(GraphML graph, File modelFile, String modelName, String modelID, int version) {
 		// TODO Auto-generated constructor stub
 		this.graph = graph;
@@ -79,7 +92,7 @@ public class GraphMLModelExporter {
 		dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");  
 		now = LocalDateTime.now();  
 		
-		graphFile = checkSnapshot();
+		graphFile = checkSnapshot(); //TODO: fetch proper previous version
 		if(graphFile != null)
 			readGraphFile(graphFile, true);
 		
@@ -104,8 +117,12 @@ public class GraphMLModelExporter {
 		return null;
 	}
 	
-	public void sortNewContent() {
-		Scanner sc = new Scanner(graphXML.toString());
+	public void sortNewContent(boolean str) {
+		Scanner sc;
+		if(str)
+			sc = new Scanner(graphOutput);
+		else 
+			sc = new Scanner(graphXML.toString());
 		String line;
 		String graphLine;
 		while (sc.hasNextLine()) {
@@ -188,10 +205,12 @@ public class GraphMLModelExporter {
 		}
 	}
 	
-	public boolean compareGraphs() {
-		graphOutput = graphXML.toString();
-		if(graphFile == null) {
-			return false;
+	public boolean compareGraphs(String historyPath, boolean addProperty) {
+		if(!addProperty) {
+			graphOutput = graphXML.toString();
+			if(graphFile == null) {
+				return false;
+			}
 		}
 		boolean modification = false;
 		ArrayList<String> deletedNodes = new ArrayList<String>();
@@ -212,22 +231,42 @@ public class GraphMLModelExporter {
 				for(String nKey : oldN.keySet()) {
 					if(newN.containsKey(nKey)) {
 						String[] split = oldN.get(nKey).split("\n",3);
-						if(newN.get(nKey).split("\n",2)[1].equals(split[2])) {
-							graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
+						
+						String newStr;
+						if(addProperty)
+							newStr = newN.get(nKey).split("\n",3)[2];
+						else 
+							newStr = newN.get(nKey).split("\n",2)[1];
+						if(newStr.equals(split[2])) {
+							if(addProperty) {
+								System.out.println("adding delta");
+								String l = newN.get(nKey).split("\n", 2)[0];
+								int i = graphOutput.indexOf(l)+l.length();
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
+							}
+							else
+								graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
 							System.out.println("node content same");
 						} else {
 							modifiedNodes.add(oldN.get(nKey));
 							String l = newN.get(nKey).split("\n", 2)[0];
 							int i = graphOutput.indexOf(l)+l.length();
-							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
-							System.out.println(newN.get(nKey).split("\n",2)[1]);
+							if(addProperty)
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
+							else
+								graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
 							System.out.println("node content modififed");
-							System.out.println(split[2]);
 							modification = true;
 						}
 					} else {
 						deletedNodes.add(oldN.get(nKey));
 						System.out.println("node deleted");
+						if(addProperty) {
+							int i = graphOutput.indexOf("<node id");
+							String[] split = oldN.get(nKey).split("\n",2);
+							String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
+							graphOutput = insertString(graphOutput, s, i-1);
+						}
 						modification = true;
 					}
 				}
@@ -236,7 +275,10 @@ public class GraphMLModelExporter {
 						addedNodes.add(newN.get(nKey));
 						String l = newN.get(nKey).split("\n", 2)[0];
 						int i = graphOutput.indexOf(l)+l.length();
-						graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
+						if(addProperty)
+							graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
+						else
+							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
 						System.out.println("new node");
 						modification = true;
 					}
@@ -246,19 +288,40 @@ public class GraphMLModelExporter {
 				for(String eKey : oldE.keySet()) {
 					if(newE.containsKey(eKey)) {
 						String[] split = oldE.get(eKey).split("\n",3);
-						if(newE.get(eKey).split("\n",2)[1].equals(split[2])) {
-							graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
+						
+						String newStr;
+						if(addProperty)
+							newStr = newE.get(eKey).split("\n",3)[2];
+						else 
+							newStr = newE.get(eKey).split("\n",2)[1];
+						if(newStr.equals(split[2])) {
+							if(addProperty) {
+								System.out.println("adding delta");
+								String l = newE.get(eKey).split("\n", 2)[0];
+								int i = graphOutput.indexOf(l)+l.length();
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
+							} else 
+								graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
 							System.out.println("edge content same");
 						} else {
 							modifiedEdges.add(oldE.get(eKey));
 							String l = newE.get(eKey).split("\n", 2)[0];
 							int i = graphOutput.indexOf(l)+l.length();
-							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
+							if(addProperty)
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
+							else
+								graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
 							System.out.println("edge content modififed: " + l);
 							modification = true;
 						}
 					} else {
 						deletedEdges.add(oldE.get(eKey));
+						if(addProperty) {
+							int i = graphOutput.indexOf("</graph>");
+							String[] split = oldE.get(eKey).split("\n",2);
+							String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
+							graphOutput = insertString(graphOutput, s, i-1);
+						}
 						System.out.println("edge deleted");
 						modification = true;
 					}
@@ -268,7 +331,10 @@ public class GraphMLModelExporter {
 						addedEdges.add(newE.get(eKey));
 						String l = newE.get(eKey).split("\n", 2)[0];
 						int i = graphOutput.indexOf(l)+l.length();
-						graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
+						if(addProperty)
+							graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
+						else
+							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
 						System.out.println("new edge");
 						modification = true;
 					}
@@ -285,7 +351,7 @@ public class GraphMLModelExporter {
 			}
 		}
 		
-		if(modification) {
+		if(modification && historyPath != null) {
 			StringBuilder summary = new StringBuilder();
 			summary.append(version + "\n");
 			summary.append(dtf.format(now) + "\n");
@@ -295,7 +361,7 @@ public class GraphMLModelExporter {
 			summary.append(deletedEdges.size() + "\n");
 			summary.append(addedEdges.size() + "\n");
 			summary.append(modifiedEdges.size() + "\n");
-			updateHistoryFile(summary.toString());
+			updateHistoryFile(summary.toString(), historyPath);
 			
 			
 			StringBuilder sb = new StringBuilder("");
@@ -305,17 +371,25 @@ public class GraphMLModelExporter {
 			sb.append(getList("Deleted Edges", deletedEdges));
 			sb.append(getList("Added Edges", addedEdges));
 			sb.append(getList("Modified Edges", modifiedEdges));
-			writeDelta(sb.toString());
+			//writeDelta(sb.toString());
 			return false;
+		} else if (addProperty) {
+			try {
+				saveFile("export/comparison.graphml", true);
+				return false;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		return true;
 	}
 	
-	private void updateHistoryFile(String summary) {
+	private void updateHistoryFile(String summary, String historyPath) {
 				 
 	    FileWriter fw;
 		try {
-			fw = new FileWriter("export/" + modelID + "_history.txt", true);
+			fw = new FileWriter(historyPath + "branch_history.txt", true);
 			BufferedWriter bw = new BufferedWriter(fw);
 		    bw.write(summary);
 		    bw.newLine();
@@ -385,7 +459,7 @@ public class GraphMLModelExporter {
 	}
 	
 	
-	public void exportGraph() throws IOException {
+	public void exportGraph() {
 		this.buildGraphXML();
 	}
 	

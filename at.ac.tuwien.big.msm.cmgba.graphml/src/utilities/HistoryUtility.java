@@ -13,7 +13,12 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 public class HistoryUtility {
-	public int histories;
+	public File[] histories;
+	public String[] historyNames;
+	public int numOfHistories;
+	public boolean newBranch;
+	public String currentBranch;
+	public int numOfBranches;
 	
 	public File saveFile(String filename, String output) throws IOException {
 
@@ -109,39 +114,85 @@ public class HistoryUtility {
 		return date;
 	}
 	
-	public void getHistories()  {
+	public File[] getHistories()  {
 		File folder = new File("export/");
-		String exports[] = folder.list();
-		for(String file : exports) {
-			if(file.contains("history")) {
-				
-			}
-				
-		}
-	}
-	
-	public int countHistories(String historizationName) {
-		String historizationPath = "export/"+historizationName;
-		histories = 0;
-		File folder = new File("export/");
-		File[] directories = folder.listFiles(File::isDirectory);
+		histories = folder.listFiles(File::isDirectory);
+		numOfHistories = histories.length;
 		
-		for(File dir : directories) {
-			if(dir.toString().equals(historizationPath)) {
-				histories++;
-			}
-			System.out.println(dir.toString());
-		}
 		return histories;
 	}
+	
+	public String[] getHistoryNames(File[] histories) {
+		String[] names = new String[histories.length];
+		for(int i=0;i<names.length;i++) {
+			names[i] = histories[i].getName();
+		}
+		
+		return names;
+	}
+	
+	public int maxBranchSize(String historizationName) {
+		String historizationPath = "export/"+historizationName;
+		int max = 0;
+		for (int i=0;i<numOfBranches;i++) {
+			int current = new File(historizationPath + "/b" + i).list().length-1;
+			if(current > max)
+				max = current;
+		}
+		return max;
+	}
+	
+	public int countBranches(String historizationName) {
+		String historizationPath = "export/"+historizationName;
+		File folder = new File(historizationPath);
+		File[] directories = folder.listFiles(File::isDirectory);
+		if(directories != null) {
+			numOfBranches = 0;
+			for(File dir : directories) {
+				numOfBranches++;
+				System.out.println(dir.toString());
+			}
+		} else {
+			System.out.println("null: " + historizationPath);
+		}
+		return numOfBranches;
+	}
 
-	public float[] getBranchCoords(String rect) {
-		String[] s = rect.split("\\s+");
-		float[] coords = {Float.parseFloat(s[1])+2, Float.parseFloat(s[0])};
+	public float[] readUpdate(String update) {
+		String[] s = update.split("\\s+");
+		newBranch = (s[0].equals("b"));
+		float[] coords = {Float.parseFloat(s[1])+2, Float.parseFloat(s[2])}; 
+		if(!newBranch)
+			currentBranch = s[0];
+		System.out.println("READ: " + newBranch + " " + currentBranch);
 		return coords;
 	}
 	public float getBranchY(String rect) {
 		String y = rect.split("\\s+")[0];
 		return Float.parseFloat(y);
+	}
+	
+	public String[] getNodeAttributes(File file) {
+		ArrayList<String> attributes = new ArrayList<String>();
+		System.out.println("YOOO");
+		try (BufferedReader br = new BufferedReader(new FileReader(file))){
+			String line = "";
+			while((line = br.readLine()) != null) {
+				if(line.contains("<key id=\"")) {
+					do {
+						String[] split = line.split("\\s+");
+						if(split[2].contains("node")) {
+							String a = split[1].substring(4,split[1].length()-1);
+							System.out.println(a);
+							attributes.add(a);
+						}
+					} while ((line = br.readLine()).contains("<key id=\""));
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return attributes.toArray(new String[0]);
 	}
 }

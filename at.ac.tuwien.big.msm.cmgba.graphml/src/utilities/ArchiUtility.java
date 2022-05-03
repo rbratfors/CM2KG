@@ -47,6 +47,10 @@ public class ArchiUtility {
 		modelID = getID(mFile);
 	}
 	
+	public void setHistory(String path) {
+		version = countVersionsInFolder(path);
+	}
+	
 	public void transform(String filename) {
 
 		try {
@@ -79,7 +83,7 @@ public class ArchiUtility {
 
 	}
 	
-	public String transform() {
+	public String historyTransform(String historyPath) {
 		
 		try {
         	XMLModelImporter importer = new XMLModelImporter();
@@ -90,7 +94,7 @@ public class ArchiUtility {
             boolean archivedModel = true;
             
             archi2Graphml.convert();
-            version = countVersions(modelID + "_v");
+            version = countVersionsInFolder(historyPath);
     		GraphML graphml = archi2Graphml.getGraphml();
     		GraphMLModelExporter modelExporter;
             modelExporter = new GraphMLModelExporter(graphml, modelFile, modelName, modelID, version);
@@ -101,25 +105,25 @@ public class ArchiUtility {
     			//System.out.println(graphXML);
     			String fileUid;
     			String filename;
-    			modelExporter.sortNewContent();
+    			modelExporter.sortNewContent(false);
     			
     			nodeAttributes = modelExporter.getNodeAttributes().toArray(new String[0]);
     			edgeAttributes = modelExporter.getEdgeAttributes().toArray(new String[0]);
+    			/*
     			System.out.println("------ATTRIBUTES------");
     			for(String n : nodeAttributes) {
     				System.out.println(n);
     			}
     			for(String e : edgeAttributes) {
     				System.out.println(e);
-    			}
+    			}*/
     			
-    			if(!modelExporter.compareGraphs()) {
-    				fileUid = modelID + "_v" + version;
+    			if(!modelExporter.compareGraphs(historyPath,false)) {
+    				fileUid = "v" + version;
         			System.out.println("fileUid: " + fileUid);
-        			filename = "export/" + fileUid + ".graphml";
+        			filename = historyPath + fileUid + ".graphml";
     				outputFile = modelExporter.saveFile(filename, true);
     				System.out.println("Saved to export: " + filename);
-    				File tmpFile = modelExporter.saveFile("snapshot/" + modelID + ".graphml", true);
     				version++;
     			} else if(version>0){
     				//Graph has no changes since last upload
@@ -153,10 +157,23 @@ public class ArchiUtility {
 		version = 0;
 		if(id==null)
 			id=modelID + "_v";
-		File folder = new File("export/");
+		File folder = new File("export/My History/b0");
 		String exports[] = folder.list();
 		for(String file : exports) {
 			if(file.contains(id))
+				version++;
+		}
+		return version;
+	}
+	
+	public int countVersionsInFolder(String path) {
+		version = 0;
+		File folder = new File(path);
+		String exports[] = folder.list();
+		if(exports == null)
+			return version;
+		for(String file : exports) {
+			if(file.contains(".graphml"))
 				version++;
 		}
 		return version;

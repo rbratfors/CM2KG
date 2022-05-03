@@ -43,27 +43,25 @@
 		</div>
 
 		<div class="row">
-			<div class="col-sm-6">
-				<form th:action="@{/upload/archihistory}" method="post" enctype="multipart/form-data">
-					<table>
+			<div class="col-sm-10">
+				<form th:action="@{/upload/archihistory}" method="post" enctype="multipart/form-data" id="TheForm">
 						<div class="form-group">
-							<label for="exampleFormControlFile1">Please select the relevant Archi XML file.</label>
-							<input type="file" name="mFile" class="form-control-file" id="exampleFormControlFile1">
+							<label for="exampleFormControlFile1" style="width:40%">Please select the relevant Archi XML file.</label> <label for="dropOperator">Histories</label><br>
+							<input type="file" name="mFile" class="form-control-file" id="exampleFormControlFile1" style="width:40%; display:inline-block;">
+							<select class="form-control" id="dropOperator" style="width:40%; display:inline-block;" name="historyName">
+							    <option th:each="h : ${histories}" th:value="${h}" th:text="${h}"></option>
+						    </select>  
 						</div>
-						
-						<button type="submit" id="uploadBtn" class="btn btn-primary">Upload</button>
+						<input type="hidden" name="newHistory" id="newHistory" value="default">
+						<div style="display:flex;justify-content:space-around;width:80%">
+						<button id="uploadBtn" class="btn btn-primary" name="submitBtn" value=0 onclick="return clicked();">Upload to new history</button>
+						<button type="submit" id="uploadBtn2" class="btn btn-primary" name="submitBtn" value=1>Upload to selected history</button>
+						<button type="submit" id="checkBtn" class="btn btn-primary" name="submitBtn" value=2>Check out selected history</button>
+						</div>
 					</table>
 				</form>
 			</div>
 			<div class="col-sm-3">
-				<form:form method = "GET" th:action="@{/upload/historymenu}">
-					<td><form:label path = "models">Models</form:label></td>
-					<br/>
-					<select class="form-control" id="dropOperator">
-					    <option value="0">New Model</option>
-					    <option th:each="version : ${modelVersions}" th:value="${version}" th:text="${version}"></option>
-				    </select>   	
-				</form:form>
 			</div>
 		</div>
 
@@ -81,10 +79,25 @@
 </body>
 
 
-<script>
-	$("#uploadBtn").click(function () {
-		$("#loading").removeClass("invisible");
-	});
+<script th:inline="javascript">
+	/*<![CDATA[*/
+	var histories = [[${histories}]];
+	/*]]>*/
+
+	
+	function clicked() {
+		var name = prompt('Enter a name for the new historization.');
+		if(name === null  || name == "") {
+            return false;
+        } else if (histories.includes(name)) {
+        	alert('Name already exists.');
+            return false;
+        }
+        else if (name != null) {
+        	document.getElementById('newHistory').setAttribute('value', name);
+            $('#TheForm').submit();
+        }
+	}
 </script>
 
 </html>

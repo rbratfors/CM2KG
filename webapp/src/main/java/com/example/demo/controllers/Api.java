@@ -40,7 +40,7 @@ public class Api {
 			UUID uuid = UUID.randomUUID();
 			String uid = uuid.toString();
 
-			archiUtil.transform();
+			archiUtil.transform(uid);
 
 			String outputContent = archiUtil.getGraphXML();
 			System.out.println(outputContent);

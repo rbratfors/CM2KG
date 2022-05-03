@@ -24,7 +24,7 @@
           	padding: 0 2rem; 
           	width: 66rem;
           	background: #DCDCDC;
-          	margin-top: 1rem;
+          	display: inline-block;
           }
         #box1 {
         	display: flex;
@@ -53,6 +53,7 @@
 			background: #DCDCDC;
 			margin-right: 1rem;
 			margin-bottom: 1rem;
+			flex-wrap:nowrap;
 		}
 		#box3 {
 			width: 24rem;
@@ -60,7 +61,20 @@
 			padding: 0 2rem;
 			float: left;
 			background: #DCDCDC;
+			margin-right: 1rem;
 			margin-bottom: 1rem;
+			flex-wrap:nowrap;
+		}
+		
+		#box4 {
+			width: 23rem;
+			height: 42rem;
+			padding: 0 2rem;
+			float: left;
+			background: #DCDCDC;
+			margin-bottom: 1rem;
+			flex-wrap:nowrap;
+		
 		}
 		.button-box {
 			padding: 0.5rem;
@@ -149,6 +163,7 @@ ul, li {
   padding: 0;
   
 }
+
 span::first-letter{
     text-transform: capitalize;
 }
@@ -166,20 +181,21 @@ A hover sample effect is added as well as an active state*/
     display: flex;
     z-index: 2;
     flex-flow: nowrap;
-  	width: 5em; 
 }
 
-.line {
-      content: '';
-      width: 100%;
-      border-top: 5px solid steelblue;
-      border-left: 5px solid steelblue;
-      display: inline-block;
-      position: relative;
-      margin-left: 60px;
-      top: 50%;
-      z-index: -1;
-}
+/*
+.base-timeline .line {
+      	content: '';
+	    height: 62%;
+	    border-top: 2px solid steelblue;
+	    border-left: 2px solid steelblue;
+	    display: inline-block;
+	    position: absolute;
+	    right: 50%;
+	    top: 100%;
+	    z-index: -1;
+	    opacity: 1;
+}*/
 
 .branch-timeline {
     list-style-type: none;
@@ -214,7 +230,6 @@ A hover sample effect is added as well as an active state*/
 }
 
 .base-timeline__item .line {
-	content: '';
     width: 62%;
     border-top: 2px solid steelblue;
     border-left: 2px solid steelblue;
@@ -224,6 +239,12 @@ A hover sample effect is added as well as an active state*/
     top: 50%;
     z-index: -1;
     opacity: 1;
+}
+
+.linetest{
+  position:absolute;
+  width:5px;
+  background-color:red;
 }
 
 .base-timeline__item .circle {
@@ -237,7 +258,6 @@ A hover sample effect is added as well as an active state*/
         background-color: steelblue;
         color: white;
         font-weight: bold;
-        transition: all 0.6s ease-in-out;
         box-sizing: border-box;      
 }
 
@@ -250,11 +270,7 @@ A hover sample effect is added as well as an active state*/
         border-radius: 50%;
         width: 40px;
         height: 40px;
-        background-color: steelblue;
-        color: white;
         font-weight: bold;
-        transition: all 0.6s ease-in-out;
-        box-sizing: border-box;      
 }
 
 /* modifier with use of the data-year attribute */
@@ -453,20 +469,19 @@ A hover sample effect is added as well as an active state*/
 
 #searchQuerySubmit:hover {
   cursor: pointer;
-}
-
+}  
     </style>
     </head>
     <body onload="init()">
     	<div id="box1">
     		<div class = "innerbox1">
-    		<h4 style="font-family: Arial" th:text="${current.modelID}"></h4>
+    		<h4 style="font-family: Arial" th:text="${currentHistory}"></h4>
     		</div>
     		<div class = "innerbox1">
 	    		<div class = "button-box">
-	    		<button class="button-17">Compare to first version</button>
-	    		<button class="button-17">Compare to latest version</button>
-	    		<button class="button-17">Compare to parent</button>
+	    		<a class="button-17" th:href="@{/neo4j}" onclick="location.href=this.href+'/'+selectedVersion.path+'/to/'+firstVersion.path;return false;">Compare to first version</a>
+	    		<a class="button-17" th:href="@{/neo4j}" onclick="location.href=this.href+'/'+selectedVersion.path+'/to/'+lastVersion.path;return false;">Compare to latest version</a>
+	    		<a class="button-17" th:href="@{/neo4j}" onclick="location.href=this.href+'/'+selectedVersion.path+'/to/'+parent.path;return false;">Compare to parent</a>
 	    		</div>
 	    		<div class = "button-box" style="margin-top:-6em;">
 	    		<form th:action="@{/upload/fromhistorypreview}" method="post" enctype="multipart/form-data">
@@ -479,14 +494,14 @@ A hover sample effect is added as well as an active state*/
 						<button type="submit" id="updateBtn" class="button-17" value="" name="update" onclick="updateButton()" style="margin-top:0.25em">Update selected branch</button>
 					</table>
 				</form>
-	    		<a th:href="@{/uploadhistory}"><button class="button-17" style="margin-top:1em">Historization menu</button></a>
+	    		<a th:href="@{/historymenu}"><button class="button-17" style="margin-top:1em">Historization menu</button></a>
 	    		</div>
     		</div>
         </div>
         <div id="timeline-container">
-        	<button class="button-17" style="position:absolute; z-index: 5; margin-top:0.5em; width: 7em; opacity:0.9" onClick="scrollToFirst()">First</button>
+        	<button class="button-17" th:id="scroll-to-first" style="position:absolute; z-index: 5; margin-top:0.5em; width: 7em; opacity:0.9" onClick="scrollToFirst()">First</button>
 	    	<button class="button-17" style="position:absolute; z-index: 5; margin-top:3em; width: 7em; opacity:0.9" onClick="scrollToLast()">Latest</button>
-	    	<button class="button-17" style="position:absolute; z-index: 5; margin-top:5.5em; width: 7em; opacity:0.9" onClick="scrollToSelected()">Selected</button>
+	    	<button class="button-17" id="scroll-to-selected" style="position:absolute; z-index: 5; margin-top:5.5em; width: 7em; opacity:0.9" onClick="scrollToSelected()">Selected</button>
 	    	<div class="wrapper">
 			  <div class="searchBar" style="position:absolute; z-index: 5; margin-top:0.5em; margin-left: 8em; width: 13em; opacity:0.9">
 			    <input id="searchQueryInput" type="text" name="searchQueryInput" placeholder="Version Number" value="" />
@@ -496,26 +511,35 @@ A hover sample effect is added as well as an active state*/
 			    </button>
 			  </div>
 			</div>
+			<!--
+			<div style="margin-top:0.5em; margin-left: 25em">
+	       		<select id="versionList">
+	       			<option>Filtered List</option>
+			    	<option th:each="v : ${modelVersions}" th:if="${v.matched}" th:text="${v.uid}" onClick="setSelectedElement(event)"></option>
+				</select>
+			</div>
+			-->
             <ul class="base-timeline" id="baseTimeline">
             	<!--  <li class="line" th:each="version,iter : ${modelVersions}"></li> -->
             	<li class="base-timeline__item" th:each="version,iter : ${modelVersions}">
-            	<span class="circle" th:id="${version.version}" onclick="setSelectedElement(event)">
-            	<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
-            	</span>
-            	<span class="line" th:id="${version.uid}"></span>
+	            	<span class="circle" th:id="${version.version}" onclick="setSelectedElement(event)">
+	            		<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
+	            	</span>
+	            	<span class="line" th:id="${version.uid}"></span>
             	</li>
             </ul>	
         </div>
         
-	        <div class = "button-box" style="flex-direction: row; width: 40em">
+	        <div class = "button-box" style="flex-direction: row; width: 40em; flex-wrap:nowrap;">
 	        	<p id="selectedVersionText"></p>
-	    		<a class="button-17" style="background-color:steelblue;color:white" th:href="@{/repository/graph//{uid}/neo4j(uid=${fileUid})}">View in Neo4j</a>
+	    		<a class="button-17" style="background-color:steelblue;color:white" th:href="@{/neo4j}" onclick="location.href=this.href+'/'+selectedVersion.path;return false;">View in Neo4j</a>
 	    		<button class="button-17" style="background-color:steelblue;color:white" href="#" id="download">Download GraphML</button>
 		    </div>
 		<div id="box2" style="overflow: auto">
 		<xmp id="inputPreview"></xmp>
         </div>
         <div id="box3">
+        	<h4 style="font-family: Arial; margin-top:0.5em;"><center>Filter Model Attributes</center></h4>
             <form th:action="@{/upload/historypreview}" method="post" enctype="multipart/form-data" th:object="${formdata}">
 						<div class="form-group">
 							<label for="startdate">Earliest Update:</label><br>
@@ -531,16 +555,16 @@ A hover sample effect is added as well as an active state*/
 							<label for="smell">Smell:</label><br>
 							<select id="smell" name="smell">
 							  	<option value=""></option>
-								<option value="s1">Smell 1</option>
-								<option value="s2">Smell 2</option>
-								<option value="s3">Smell 3</option>
+								<option value="s1">Placeholder 1</option>
+								<option value="s2">Placeholder 2</option>
+								<option value="s3">Placeholder 3</option>
 							</select><br>
 							<label for="function">Function:</label><br>
 							<select id="function" name="function">
 								<option value=""></option>
-								<option value="f1">Function 1</option>
-								<option value="f2">Function 2</option>
-								<option value="f3">Function 3</option>
+								<option value="f1">Placeholder 1</option>
+								<option value="f2">Placeholder 2</option>
+								<option value="f3">Placeholder 3</option>
 							</select><br>
 							<label for="vers">Version:</label>
 							<select class="form-control" id="vers" name="vers">
@@ -561,42 +585,57 @@ A hover sample effect is added as well as an active state*/
         
         <script th:inline="javascript">
         
+        
         /*<![CDATA[*/
 		var modelVersions = [[${modelVersions}]];
 		/*]]>*/
 		
-		 /*<![CDATA[*/
+		/*<![CDATA[*/
+		var branches = [[${branches}]];
+		/*]]>*/
+		
+		/*<![CDATA[*/
 		var coords = [[${coords}]];
 		/*]]>*/
+		
 		var numOfVersions = modelVersions.length;
 		var selectedVersion = modelVersions[numOfVersions-1];
-		
+		var firstVersion = modelVersions[0];
+		var lastVersion = modelVersions[numOfVersions-1];
+		var parent = modelVersions[numOfVersions-2];
 		var selectedRect = document.getElementById(numOfVersions-1).getBoundingClientRect();
 		
 		updateRect();
 		
-        function deffy() {
+        function updateGraphML() {
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
         	var versionNumber = selectedVersion.version;
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
+        	parent = modelVersions[selectedVersion.version-1];
         }
         
         function branchButton() {
-        	document.getElementById("branchBtn").value = selectedRect.top + " " + selectedRect.left;
+        	document.getElementById("branchBtn").value = "b " + selectedRect.left + " " + selectedRect.top;
         }
         
         function updateButton() {
-        	document.getElementById("updateBtn").value = selectedRect.top + " " + selectedRect.left;
+        	document.getElementById("updateBtn").value = "b" + selectedVersion.branch + " " + selectedRect.left + " " + selectedRect.top;
         }
         
         function setSelectedElement(e) {
         	var selectedElement = e.target || e.srcElement;
         	
+        	var previousElement = document.getElementById(selectedVersion.version);
+        	
+        	
         	selectedRect = selectedElement.getBoundingClientRect();
         	
         	selectedVersion = modelVersions[parseInt(selectedElement.id)];
         	
-        	deffy();
+        	previousElement.style.backgroundColor = selectedElement.style.backgroundColor;
+        	selectedElement.style.backgroundColor = "darkred";
+        	
+        	updateGraphML();
         	
         }
         
@@ -609,8 +648,15 @@ A hover sample effect is added as well as an active state*/
         	elStyle.content = version.version;
         }
         
+        function test(item) {
+        	item.forEach(test2());
+        }
+        
+        function test2(item) {
+        	alert(item.version);
+        }
+        
         function init() {
-        	
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
         	var versionNumber = selectedVersion.version;
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
@@ -624,16 +670,14 @@ A hover sample effect is added as well as an active state*/
         	
         	var firstLine = document.getElementById(modelVersions[0].uid).style;
         	firstLine.opacity = 0;
-        	
-        	if(!coords) {
-        		return;
+        }
+        
+        function colorTest() {
+        	for (let i = 5; i < modelVersions.length; i++) {
+        		let e = document.getElementById(i);
+        		e.parentElement.style.top = parseInt(e.parentElement.style.top) + 50 + 'px';
+        		e.style.backgroundColor = 'green';
         	}
-        	
-        	return;
-        	var branchStyle = document.getElementById('branchboy').style;
-        	alert(branchStyle.left);
-        	branchStyle.left = coords[0]+'px';
-        	branchStyle.top = coords[1];
         }
         
         function setOpacity(version) {
@@ -644,6 +688,44 @@ A hover sample effect is added as well as an active state*/
         	else {
         		elStyle.opacity = 0.4;
         	}
+        }
+        
+        function adjustLine(from, to, line){
+
+        	  var fT = from.offsetTop  + from.offsetHeight/2;
+        	  var tT = to.offsetTop    + to.offsetHeight/2;
+        	  var fL = from.offsetLeft + from.offsetWidth/2;
+        	  var tL = to.offsetLeft   + to.offsetWidth/2;
+        	  
+        	  var CA   = Math.abs(tT - fT);
+        	  var CO   = Math.abs(tL - fL);
+        	  var H    = Math.sqrt(CA*CA + CO*CO);
+        	  var ANG  = 180 / Math.PI * Math.acos( CA/H );
+
+        	  if(tT > fT){
+        	      var top  = (tT-fT)/2 + fT;
+        	  }else{
+        	      var top  = (fT-tT)/2 + tT;
+        	  }
+        	  if(tL > fL){
+        	      var left = (tL-fL)/2 + fL;
+        	  }else{
+        	      var left = (fL-tL)/2 + tL;
+        	  }
+
+        	  if(( fT < tT && fL < tL) || ( tT < fT && tL < fL) || (fT > tT && fL > tL) || (tT > fT && tL > fL)){
+        	    ANG *= -1;
+        	  }
+        	  top-= H/2;
+
+        	  line.style["-webkit-transform"] = 'rotate('+ ANG +'deg)';
+        	  line.style["-moz-transform"] = 'rotate('+ ANG +'deg)';
+        	  line.style["-ms-transform"] = 'rotate('+ ANG +'deg)';
+        	  line.style["-o-transform"] = 'rotate('+ ANG +'deg)';
+        	  line.style["-transform"] = 'rotate('+ ANG +'deg)';
+        	  line.style.top    = top+'px';
+        	  line.style.left   = left+'px';
+        	  line.style.height = H + 'px';
         }
         
         function scrollToFirst() {
@@ -690,6 +772,7 @@ A hover sample effect is added as well as an active state*/
                 let pos = { top: 0, left: 0, x: 0, y: 0 };
 
                 const mouseDownHandler = function (e) {
+                	alert();
                     ele.style.cursor = 'grabbing';
                     ele.style.userSelect = 'none';
 

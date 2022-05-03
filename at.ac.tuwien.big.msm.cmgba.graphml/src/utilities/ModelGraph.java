@@ -29,18 +29,25 @@ public class ModelGraph {
 	public String modelID;
 	public String nodeId;
 	public boolean matched;
+	public String historyName;
+	public int branch;
+	public String path;
 	
-	public ModelGraph(int i, String uid, String content, String date, String delta, String modelID, String nodeId, boolean matched) {
+	public ModelGraph(int i, String uid, String content, String date, String modelID, String nodeId, boolean matched, String history, int branch) {
 		this.version = i;
 		this.uid = uid;
 		this.content = content;
 		this.date = date;
-		this.delta = delta;
-		this.modelID = modelID;
+		this.modelID = uid;
 		this.nodeId = nodeId;
 		this.matched = matched;
+		historyName = history;
+		this.branch = branch;
 		
-		deltaSummary = summarizeDelta();
+		String historyPath = "export/" + history + "/b"+branch+"/";
+		path = history + "/b" + branch+ "/v" + version;
+		
+		deltaSummary = summarizeDelta(historyPath);
 		summary = createSummary(deltaSummary);
 	}
 	
@@ -53,14 +60,14 @@ public class ModelGraph {
 		return summary.toString();
 	}
 	
-	private String summarizeDelta() {
+	private String summarizeDelta(String historyPath) {
 		
 		StringBuilder summary = new StringBuilder();
 	    String line;
 	    
 	    BufferedReader br;
 		try {
-			br = new BufferedReader(new FileReader("export/" + modelID + "_history.txt"));
+			br = new BufferedReader(new FileReader(historyPath + "branch_history.txt"));
 			int i = 0;
 			while ((line = br.readLine()) != null) {
 				if(i>1 + version*9) {
