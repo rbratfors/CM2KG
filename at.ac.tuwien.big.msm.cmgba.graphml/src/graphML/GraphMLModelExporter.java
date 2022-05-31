@@ -81,7 +81,7 @@ public class GraphMLModelExporter {
 	}
 	
 	
-	public GraphMLModelExporter(GraphML graph, File modelFile, String modelName, String modelID, int version) {
+	public GraphMLModelExporter(GraphML graph, File modelFile, String modelName, String modelID, int version, String historyPath) {
 		// TODO Auto-generated constructor stub
 		this.graph = graph;
 		this.modelID = modelID;
@@ -92,7 +92,7 @@ public class GraphMLModelExporter {
 		dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");  
 		now = LocalDateTime.now();  
 		
-		graphFile = checkSnapshot(); //TODO: fetch proper previous version
+		graphFile = getParent(historyPath);
 		if(graphFile != null)
 			readGraphFile(graphFile, true);
 		
@@ -102,6 +102,16 @@ public class GraphMLModelExporter {
 		//this.dataKeysXML.append("<key id=\"ClassName\" for=\"edge\" attr.name=\"ClassName\" attr.type=\"string\"/> \r\n");
 		
 		dataKeys = new HashMap<>();
+	}
+	
+	private File getParent(String historyPath) {
+		File folder = new File(historyPath);
+		String history[] = folder.list();
+		for(String h : history) {
+			if(h.equals("v" + (version-1) + ".graphml"))
+				return new File(historyPath + "/" + h);
+		}
+		return null;
 	}
 	
 	private File checkSnapshot() {
@@ -118,6 +128,7 @@ public class GraphMLModelExporter {
 	}
 	
 	public void sortNewContent(boolean str) {
+		System.out.println("Sorting new content");
 		Scanner sc;
 		if(str)
 			sc = new Scanner(graphOutput);
@@ -206,187 +217,218 @@ public class GraphMLModelExporter {
 	}
 	
 	public boolean compareGraphs(String historyPath, boolean addProperty) {
+		System.out.println("comparing graphs");
+		
+		boolean newHistory = false;
 		if(!addProperty) {
 			graphOutput = graphXML.toString();
 			if(graphFile == null) {
-				return false;
+				newHistory = true;
 			}
 		}
+
 		boolean modification = false;
-		ArrayList<String> deletedNodes = new ArrayList<String>();
-		ArrayList<String> addedNodes = new ArrayList<String>();
-		ArrayList<String> modifiedNodes = new ArrayList<String>();
-		ArrayList<String> deletedEdges = new ArrayList<String>();
-		ArrayList<String> addedEdges = new ArrayList<String>();
-		ArrayList<String> modifiedEdges = new ArrayList<String>();
 		
-		for (String key : oldNodes.keySet()) {
-			if(newNodes.containsKey(key)) {
-				HashMap<String, String> oldN = oldNodes.get(key);
-				HashMap<String, String> newN = newNodes.get(key);
-				HashMap<String, String> oldE = oldEdges.get(key);
-				HashMap<String, String> newE = newEdges.get(key);
-				
-				//check nodes
-				for(String nKey : oldN.keySet()) {
-					if(newN.containsKey(nKey)) {
-						String[] split = oldN.get(nKey).split("\n",3);
-						
-						String newStr;
-						if(addProperty)
-							newStr = newN.get(nKey).split("\n",3)[2];
-						else 
-							newStr = newN.get(nKey).split("\n",2)[1];
-						if(newStr.equals(split[2])) {
-							if(addProperty) {
-								System.out.println("adding delta");
+		if(!newHistory) {
+			ArrayList<String> deletedNodes = new ArrayList<String>();
+			ArrayList<String> addedNodes = new ArrayList<String>();
+			ArrayList<String> modifiedNodes = new ArrayList<String>();
+			ArrayList<String> deletedEdges = new ArrayList<String>();
+			ArrayList<String> addedEdges = new ArrayList<String>();
+			ArrayList<String> modifiedEdges = new ArrayList<String>();
+			
+			for (String key : oldNodes.keySet()) {
+				if(newNodes.containsKey(key)) {
+					HashMap<String, String> oldN = oldNodes.get(key);
+					HashMap<String, String> newN = newNodes.get(key);
+					HashMap<String, String> oldE = oldEdges.get(key);
+					HashMap<String, String> newE = newEdges.get(key);
+					
+					//check nodes
+					for(String nKey : oldN.keySet()) {
+						if(newN.containsKey(nKey)) {
+							String[] split = oldN.get(nKey).split("\n",4);
+							
+							String newStr;
+							if(addProperty)
+								newStr = newN.get(nKey).split("\n",3)[2];
+							else 
+								newStr = newN.get(nKey).split("\n",2)[1];
+							if(newStr.equals(split[3])) {
+								if(addProperty) {
+									System.out.println("adding delta");
+									String l = newN.get(nKey).split("\n", 2)[0];
+									int i = graphOutput.indexOf(l)+l.length();
+									graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
+								}
+								else {
+									String l = newN.get(nKey).split("\n", 2)[0];
+									int i = graphOutput.indexOf(l)+l.length();
+									graphOutput = insertString(graphOutput, "\n<data key=\"Delta\">Same</data>", i);
+									graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
+								}
+								System.out.println("node content same");
+							} else {
+								modifiedNodes.add(oldN.get(nKey));
 								String l = newN.get(nKey).split("\n", 2)[0];
 								int i = graphOutput.indexOf(l)+l.length();
-								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
+								if(addProperty)
+									graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
+								else {
+									graphOutput = insertString(graphOutput, "<data key=\"LastUpdate\">" + dtf.format(now) + "</data>\n" + "<data key=\"Delta\">Modified</data>", i);
+								}
+								System.out.println("node content modififed");
+								modification = true;
 							}
-							else
-								graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
-							System.out.println("node content same");
 						} else {
-							modifiedNodes.add(oldN.get(nKey));
+							deletedNodes.add(oldN.get(nKey));
+							System.out.println("node deleted");
+							if(addProperty) {
+								int i = graphOutput.indexOf("<node id");
+								String[] split = oldN.get(nKey).split("\n",2);
+								String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
+								graphOutput = insertString(graphOutput, s, i-1);
+							}
+							modification = true;
+						}
+					}
+					for(String nKey : newN.keySet()) {
+						if(!oldN.containsKey(nKey)) {
+							addedNodes.add(newN.get(nKey));
 							String l = newN.get(nKey).split("\n", 2)[0];
 							int i = graphOutput.indexOf(l)+l.length();
 							if(addProperty)
-								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
-							else
-								graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
-							System.out.println("node content modififed");
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
+							else {
+								graphOutput = insertString(graphOutput, "<data key=\"LastUpdate\">" + dtf.format(now) + "</data>\n" + "<data key=\"Delta\">Added</data>", i);
+							}
+							System.out.println("new node");
 							modification = true;
 						}
-					} else {
-						deletedNodes.add(oldN.get(nKey));
-						System.out.println("node deleted");
-						if(addProperty) {
-							int i = graphOutput.indexOf("<node id");
-							String[] split = oldN.get(nKey).split("\n",2);
-							String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
-							graphOutput = insertString(graphOutput, s, i-1);
-						}
-						modification = true;
 					}
-				}
-				for(String nKey : newN.keySet()) {
-					if(!oldN.containsKey(nKey)) {
-						addedNodes.add(newN.get(nKey));
-						String l = newN.get(nKey).split("\n", 2)[0];
-						int i = graphOutput.indexOf(l)+l.length();
-						if(addProperty)
-							graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
-						else
-							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
-						System.out.println("new node");
-						modification = true;
-					}
-				}
-				
-				//check edges
-				for(String eKey : oldE.keySet()) {
-					if(newE.containsKey(eKey)) {
-						String[] split = oldE.get(eKey).split("\n",3);
-						
-						String newStr;
-						if(addProperty)
-							newStr = newE.get(eKey).split("\n",3)[2];
-						else 
-							newStr = newE.get(eKey).split("\n",2)[1];
-						if(newStr.equals(split[2])) {
-							if(addProperty) {
-								System.out.println("adding delta");
+					
+					//check edges
+					for(String eKey : oldE.keySet()) {
+						if(newE.containsKey(eKey)) {
+							String[] split = oldE.get(eKey).split("\n",4);
+							
+							String newStr;
+							if(addProperty)
+								newStr = newE.get(eKey).split("\n",3)[2];
+							else 
+								newStr = newE.get(eKey).split("\n",2)[1];
+							if(newStr.equals(split[3])) {
+								if(addProperty) {
+									System.out.println("adding delta");
+									String l = newE.get(eKey).split("\n", 2)[0];
+									int i = graphOutput.indexOf(l)+l.length();
+									graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
+								} else {
+									String l = newE.get(eKey).split("\n", 2)[0];
+									int i = graphOutput.indexOf(l)+l.length();
+									graphOutput = insertString(graphOutput, "\n<data key=\"Delta\">Same</data>", i);
+									graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
+								}
+								System.out.println("edge content same");
+							} else {
+								modifiedEdges.add(oldE.get(eKey));
 								String l = newE.get(eKey).split("\n", 2)[0];
 								int i = graphOutput.indexOf(l)+l.length();
-								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Same</data>\n", i);
-							} else 
-								graphOutput = insertString(graphOutput, split[1], graphOutput.indexOf(split[0])+split[0].length());
-							System.out.println("edge content same");
+								if(addProperty)
+									graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
+								else {
+									graphOutput = insertString(graphOutput, "<data key=\"LastUpdate\">" + dtf.format(now) + "</data>\n" + "<data key=\"Delta\">Modified</data>", i);
+								}
+								System.out.println("edge content modififed: " + l);
+								modification = true;
+							}
 						} else {
-							modifiedEdges.add(oldE.get(eKey));
+							deletedEdges.add(oldE.get(eKey));
+							if(addProperty) {
+								int i = graphOutput.indexOf("</graph>");
+								String[] split = oldE.get(eKey).split("\n",2);
+								String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
+								graphOutput = insertString(graphOutput, s, i-1);
+							}
+							System.out.println("edge deleted");
+							modification = true;
+						}
+					}
+					for(String eKey : newE.keySet()) {
+						if(!oldE.containsKey(eKey)) {
+							addedEdges.add(newE.get(eKey));
 							String l = newE.get(eKey).split("\n", 2)[0];
 							int i = graphOutput.indexOf(l)+l.length();
 							if(addProperty)
-								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Modified</data>\n", i);
+								graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
 							else
-								graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
-							System.out.println("edge content modififed: " + l);
+								graphOutput = insertString(graphOutput, "<data key=\"LastUpdate\">" + dtf.format(now) + "</data>\n" + "<data key=\"Delta\">Added</data>", i);
+							System.out.println("new edge");
 							modification = true;
 						}
-					} else {
-						deletedEdges.add(oldE.get(eKey));
-						if(addProperty) {
-							int i = graphOutput.indexOf("</graph>");
-							String[] split = oldE.get(eKey).split("\n",2);
-							String s = split[0] + "\n<data key=\"Delta\">Deleted</data>\n" + split[1] + "\n";
-							graphOutput = insertString(graphOutput, s, i-1);
-						}
-						System.out.println("edge deleted");
-						modification = true;
 					}
+					
+				} else {
+					System.out.println("graph deleted");
+					modification = true;
 				}
-				for(String eKey : newE.keySet()) {
-					if(!oldE.containsKey(eKey)) {
-						addedEdges.add(newE.get(eKey));
-						String l = newE.get(eKey).split("\n", 2)[0];
-						int i = graphOutput.indexOf(l)+l.length();
-						if(addProperty)
-							graphOutput = insertString(graphOutput, "<data key=\"Delta\">Added</data>\n", i);
-						else
-							graphOutput = insertString(graphOutput, "\n<data key=\"LastUpdate\">" + dtf.format(now) + "</data>", i);
-						System.out.println("new edge");
-						modification = true;
-					}
+			}
+			for (String key : newNodes.keySet()) {
+				if(!oldNodes.containsKey(key)) {
+					System.out.println("new graph");
 				}
-				
-			} else {
-				System.out.println("graph deleted");
-				modification = true;
 			}
-		}
-		for (String key : newNodes.keySet()) {
-			if(!oldNodes.containsKey(key)) {
-				System.out.println("new graph");
-			}
-		}
 		
-		if(modification && historyPath != null) {
+			if(modification && historyPath != null) {
+				StringBuilder summary = new StringBuilder();
+				summary.append(version + "\n");
+				summary.append(dtf.format(now) + "\n");
+				summary.append(deletedNodes.size() + "\n");
+				summary.append(addedNodes.size() + "\n");
+				summary.append(modifiedNodes.size() + "\n");
+				summary.append(deletedEdges.size() + "\n");
+				summary.append(addedEdges.size() + "\n");
+				summary.append(modifiedEdges.size() + "\n");
+				updateHistoryFile(summary.toString(), historyPath);
+				
+				/*
+				StringBuilder sb = new StringBuilder("");
+				sb.append(getList("Deleted Nodes", deletedNodes));
+				sb.append(getList("Added Nodes", addedNodes));
+				sb.append(getList("Modified Nodes", modifiedNodes));
+				sb.append(getList("Deleted Edges", deletedEdges));
+				sb.append(getList("Added Edges", addedEdges));
+				sb.append(getList("Modified Edges", modifiedEdges));
+				writeDelta(sb.toString());
+				*/
+				return false;
+			} else if (addProperty) {
+				try {
+					saveFile("export/comparison.graphml", true);
+					return false;
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} else {
 			StringBuilder summary = new StringBuilder();
 			summary.append(version + "\n");
 			summary.append(dtf.format(now) + "\n");
-			summary.append(deletedNodes.size() + "\n");
-			summary.append(addedNodes.size() + "\n");
-			summary.append(modifiedNodes.size() + "\n");
-			summary.append(deletedEdges.size() + "\n");
-			summary.append(addedEdges.size() + "\n");
-			summary.append(modifiedEdges.size() + "\n");
+			summary.append("0\n");
+			summary.append(newNodes.get(newNodes.keySet().toArray()[0]).size() + "\n");
+			summary.append("0\n");
+			summary.append("0\n");
+			summary.append(newEdges.get(newNodes.keySet().toArray()[0]).size() + "\n");
+			summary.append("0\n");
 			updateHistoryFile(summary.toString(), historyPath);
-			
-			
-			StringBuilder sb = new StringBuilder("");
-			sb.append(getList("Deleted Nodes", deletedNodes));
-			sb.append(getList("Added Nodes", addedNodes));
-			sb.append(getList("Modified Nodes", modifiedNodes));
-			sb.append(getList("Deleted Edges", deletedEdges));
-			sb.append(getList("Added Edges", addedEdges));
-			sb.append(getList("Modified Edges", modifiedEdges));
-			//writeDelta(sb.toString());
 			return false;
-		} else if (addProperty) {
-			try {
-				saveFile("export/comparison.graphml", true);
-				return false;
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		}
 		return true;
 	}
 	
 	private void updateHistoryFile(String summary, String historyPath) {
-				 
+		System.out.println("Writing to history");
 	    FileWriter fw;
 		try {
 			fw = new FileWriter(historyPath + "branch_history.txt", true);
@@ -579,7 +621,7 @@ public String getGraphOutput(){
 		//open node
 		String line = "<node id=\""+n.getId()+"\"> \r\n";
 		if(graphFile == null)
-			line += "<data key=\"LastUpdate\">" + dtf.format(now) + "</data> \r\n";
+			line += "<data key=\"LastUpdate\">" + dtf.format(now) + "</data> \r\n" + "<data key=\"Delta\">Added</data>\n";
 		this.graphXML.append(line);
 		
 		String nodeContent = line;
@@ -609,7 +651,7 @@ public String getGraphOutput(){
 		
 		String line = "<edge source=\""+e.getSource().getId()+"\" target=\""+e.getTarget().getId()+"\"> \r\n";
 		if(graphFile == null)
-			line += "<data key=\"LastUpdate\">" + dtf.format(now) + "</data> \r\n";
+			line += "<data key=\"LastUpdate\">" + dtf.format(now) + "</data> \r\n" + "<data key=\"Delta\">Added</data>\n";
 		this.graphXML.append(line);
 		
 		String edgeContent = line;

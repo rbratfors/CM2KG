@@ -97,7 +97,7 @@ public class ArchiUtility {
             version = countVersionsInFolder(historyPath);
     		GraphML graphml = archi2Graphml.getGraphml();
     		GraphMLModelExporter modelExporter;
-            modelExporter = new GraphMLModelExporter(graphml, modelFile, modelName, modelID, version);
+            modelExporter = new GraphMLModelExporter(graphml, modelFile, modelName, modelID, version, historyPath);
     		try {
     			modelExporter.exportGraph();
     			graphXML = modelExporter.getGraphXML();

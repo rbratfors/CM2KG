@@ -32,8 +32,10 @@ public class ModelGraph {
 	public String historyName;
 	public int branch;
 	public String path;
+	public String parent;
+	public String filterDelta;
 	
-	public ModelGraph(int i, String uid, String content, String date, String modelID, String nodeId, boolean matched, String history, int branch) {
+	public ModelGraph(int i, String uid, String content, String date, String modelID, String nodeId, boolean matched, String history, int branch, String delta) {
 		this.version = i;
 		this.uid = uid;
 		this.content = content;
@@ -43,10 +45,12 @@ public class ModelGraph {
 		this.matched = matched;
 		historyName = history;
 		this.branch = branch;
+		this.delta = delta;
 		
 		String historyPath = "export/" + history + "/b"+branch+"/";
 		path = history + "/b" + branch+ "/v" + version;
 		
+
 		deltaSummary = summarizeDelta(historyPath);
 		summary = createSummary(deltaSummary);
 	}
@@ -70,7 +74,7 @@ public class ModelGraph {
 			br = new BufferedReader(new FileReader(historyPath + "branch_history.txt"));
 			int i = 0;
 			while ((line = br.readLine()) != null) {
-				if(i>1 + version*9) {
+				if(i>3 + version*9) {
 					int n = Integer.parseInt(line);
 					if(n>1) {
 						summary.append(n + " Deleted Nodes <br/>");

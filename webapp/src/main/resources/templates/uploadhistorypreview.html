@@ -174,7 +174,7 @@ if you set this width
 A hover sample effect is added as well as an active state*/
 
 .base-timeline {
-	padding: 15em 5em 15em 5em;
+	padding: 2em 0em 2em 0em;
     list-style-type: none;
     counter-reset: number -1; /* number 2021*/
     position: relative;
@@ -297,7 +297,6 @@ A hover sample effect is added as well as an active state*/
 .branch-timeline__item {
       position: relative;
       display: inline-block;
-      width: calc(100% / 3 - 15px); /* change width */
 }
 
 .branch-timeline__item::before {
@@ -519,15 +518,22 @@ A hover sample effect is added as well as an active state*/
 				</select>
 			</div>
 			-->
+			<!--
             <ul class="base-timeline" id="baseTimeline">
-            	<!--  <li class="line" th:each="version,iter : ${modelVersions}"></li> -->
-            	<li class="base-timeline__item" th:each="version,iter : ${modelVersions}">
+            	<li class="base-timeline__item" th:each="version,iter : ${branches[0]}">
 	            	<span class="circle" th:id="${version.version}" onclick="setSelectedElement(event)">
 	            		<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
 	            	</span>
-	            	<span class="line" th:id="${version.uid}"></span>
-            	</li>
+            	</li>           	
             </ul>	
+            <ulclass="base-timeline" id="baseTimeline">
+            <li class="base-timeline__item" th:each="version,iter : ${branches[1]}">
+	            	<span class="circle" th:id="'b'+${version.version}" onclick="setSelectedElement(event)">
+	            		<span class="tooltip" th:utext="${version.summary}" th:id="${version.nodeId}"></span>
+	            	</span>
+            	</li>
+            </ul>
+            -->
         </div>
         
 	        <div class = "button-box" style="flex-direction: row; width: 40em; flex-wrap:nowrap;">
@@ -577,8 +583,8 @@ A hover sample effect is added as well as an active state*/
 						</div>
 						
 						<div style="display:flex;justify-content:center;justify-content:space-evenly">
-							<button type="submit" name="action" id="queryCurrentBtn" th:value="single" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query Selected</button>
-							<button type="submit" name="action" id="queryAllBtn" th:value="all" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query All</button>
+							<button type="submit" name="action" id="queryCurrentBtn" th:value="delta" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Filter on change</button>
+							<button type="submit" name="action" id="queryAllBtn" th:value="all" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Filter on presence</button>
 						</div>
 				</form>
         </div>
@@ -587,60 +593,66 @@ A hover sample effect is added as well as an active state*/
         
         
         /*<![CDATA[*/
-		var modelVersions = [[${modelVersions}]];
+		const modelVersions = [[${modelVersions}]];
 		/*]]>*/
 		
 		/*<![CDATA[*/
-		var branches = [[${branches}]];
+		const branches = [[${branches}]];
 		/*]]>*/
 		
 		/*<![CDATA[*/
-		var coords = [[${coords}]];
+		const parents = [[${parents}]];
 		/*]]>*/
 		
-		var numOfVersions = modelVersions.length;
-		var selectedVersion = modelVersions[numOfVersions-1];
+		/*<![CDATA[*/
+		const filter = [[${filter}]];
+		/*]]>*/
+		
+		var numOfVersions = branches[0].length;
+		var selectedVersion = branches[0][numOfVersions-1];
 		var firstVersion = modelVersions[0];
 		var lastVersion = modelVersions[numOfVersions-1];
-		var parent = modelVersions[numOfVersions-2];
-		var selectedRect = document.getElementById(numOfVersions-1).getBoundingClientRect();
+		var selectedRect = document.getElementById(selectedVersion.uid).getBoundingClientRect();
 		
 		updateRect();
 		
         function updateGraphML() {
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
-        	var versionNumber = selectedVersion.version;
-        	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
-        	parent = modelVersions[selectedVersion.version-1];
+        	var versionNumber = selectedVersion.uid;
+        	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber;
         }
         
         function branchButton() {
-        	document.getElementById("branchBtn").value = "b " + selectedRect.left + " " + selectedRect.top;
+        	document.getElementById("branchBtn").value = "b " + selectedVersion.uid + " " + selectedRect.left + " " + selectedRect.top;
         }
         
         function updateButton() {
-        	document.getElementById("updateBtn").value = "b" + selectedVersion.branch + " " + selectedRect.left + " " + selectedRect.top;
+        	document.getElementById("updateBtn").value = "b" + selectedVersion.branch + " " + selectedVersion.uid + " " + selectedRect.left + " " + selectedRect.top;
         }
         
         function setSelectedElement(e) {
+        	const colors = ["steelblue", "goldenrod", "darkorchid", "darkkhaki", "cornflowerblue", "lightpink", "mediumseagreen", "olive", "salmon", "palevioletred"];
         	var selectedElement = e.target || e.srcElement;
         	
-        	var previousElement = document.getElementById(selectedVersion.version);
+        	var previousElement = document.getElementById(selectedVersion.uid);
         	
+        	previousId = selectedVersion.uid;
         	
         	selectedRect = selectedElement.getBoundingClientRect();
         	
-        	selectedVersion = modelVersions[parseInt(selectedElement.id)];
+        	var splitId = selectedElement.id.split('v');
         	
-        	previousElement.style.backgroundColor = selectedElement.style.backgroundColor;
-        	selectedElement.style.backgroundColor = "darkred";
+        	var bId = splitId[0].substring(1);
+        	
+        	var vId = splitId[1];
+        	
+        	selectedVersion = branches[parseInt(bId)][parseInt(vId)];
+        	
+        	previousElement.style.backgroundColor = colors[previousId.split('v')[0].substring(1)];
+        	selectedElement.style.backgroundColor = "black";
         	
         	updateGraphML();
         	
-        }
-        
-        function modelFuncs(version) {
-        	setOpacity(version);
         }
         
         function setCircleContents(version) {
@@ -657,19 +669,21 @@ A hover sample effect is added as well as an active state*/
         }
         
         function init() {
+        	const colors = ["steelblue", "goldenrod", "darkorchid", "darkkhaki", "cornflowerblue", "lightpink", "mediumseagreen", "olive", "salmon", "palevioletred"];
+        	getBranches(colors);
+        	
+        	
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
         	var versionNumber = selectedVersion.version;
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
-        	
-        	modelVersions.forEach(modelFuncs);
-        	
-        	var baseTimelineStyle = document.getElementById('baseTimeline').style;
-        	var w = 200+numOfVersions*100;
-        	baseTimelineStyle.width = w+'px';
-        	
-        	
-        	var firstLine = document.getElementById(modelVersions[0].uid).style;
-        	firstLine.opacity = 0;
+        }
+        
+        function testy(version) {
+        	version.forEach(testy2);
+        }
+        
+        function testy2(version) {
+        	alert(version.version);
         }
         
         function colorTest() {
@@ -681,51 +695,13 @@ A hover sample effect is added as well as an active state*/
         }
         
         function setOpacity(version) {
-        	var elStyle = document.getElementById(version.version).style;
+        	var elStyle = document.getElementById(version.uid).style;
         	if(version.matched) {
         		elStyle.opacity = 1;
         	}
         	else {
         		elStyle.opacity = 0.4;
         	}
-        }
-        
-        function adjustLine(from, to, line){
-
-        	  var fT = from.offsetTop  + from.offsetHeight/2;
-        	  var tT = to.offsetTop    + to.offsetHeight/2;
-        	  var fL = from.offsetLeft + from.offsetWidth/2;
-        	  var tL = to.offsetLeft   + to.offsetWidth/2;
-        	  
-        	  var CA   = Math.abs(tT - fT);
-        	  var CO   = Math.abs(tL - fL);
-        	  var H    = Math.sqrt(CA*CA + CO*CO);
-        	  var ANG  = 180 / Math.PI * Math.acos( CA/H );
-
-        	  if(tT > fT){
-        	      var top  = (tT-fT)/2 + fT;
-        	  }else{
-        	      var top  = (fT-tT)/2 + tT;
-        	  }
-        	  if(tL > fL){
-        	      var left = (tL-fL)/2 + fL;
-        	  }else{
-        	      var left = (fL-tL)/2 + tL;
-        	  }
-
-        	  if(( fT < tT && fL < tL) || ( tT < fT && tL < fL) || (fT > tT && fL > tL) || (tT > fT && tL > fL)){
-        	    ANG *= -1;
-        	  }
-        	  top-= H/2;
-
-        	  line.style["-webkit-transform"] = 'rotate('+ ANG +'deg)';
-        	  line.style["-moz-transform"] = 'rotate('+ ANG +'deg)';
-        	  line.style["-ms-transform"] = 'rotate('+ ANG +'deg)';
-        	  line.style["-o-transform"] = 'rotate('+ ANG +'deg)';
-        	  line.style["-transform"] = 'rotate('+ ANG +'deg)';
-        	  line.style.top    = top+'px';
-        	  line.style.left   = left+'px';
-        	  line.style.height = H + 'px';
         }
         
         function scrollToFirst() {
@@ -816,8 +792,164 @@ A hover sample effect is added as well as an active state*/
 	        }
 	    
 		function clickTest() {
-			  alert(selectedVersion.uid);
+				branches.forEach(testy);
 			}
+		
+		
+		function getBranches(colors) {
+			var timeline = document.getElementById('timeline-container');
+			for(var i=0;i<branches.length;i++) {
+				var branch = branches[i];
+				draw_nodes(timeline, branch, i, colors);
+				expand_timeline(i, branch.length);
+				draw_lines(i, colors);
+				
+				if(filter==="all") {
+					console.log(branch);
+					for(let j=0;j<branch.length;j++) {
+						setOpacity(branch[j]);
+					}
+				} else if(filter==="delta") {
+					for(let j=0;j<branch.length;j++) {
+						console.log(branch[j].filterDelta);
+						var version = branch[j];
+						if(version.filterDelta==="Same") {
+							colorElement(version,"darkgrey",0.5);
+						} else if (version.filterDelta==="Deleted") {
+							colorElement(version,"red",1);
+						} else if (version.filterDelta==="Added") {
+							colorElement(version,"green",1);
+						} else if (version.filterDelta==="Modified") {
+							colorElement(version,"orange",1);
+						}
+					}
+				}
+			}
+		}
+		
+		function colorElement(element, color, opacity) {
+			var elStyle = document.getElementById(element.uid).style;
+			elStyle.backgroundColor = color;
+			elStyle.opacity = opacity;
+		}
+		
+		function expand_timeline(i, size) {
+			var baseTimelineStyle = document.getElementById('baseTimeline'+i).style;
+        	var w = size*100;
+        	baseTimelineStyle.width = w+'px';
+        	if(i>0) {
+        		var splitId = branches[i][0].parent.split('v');
+        		var row = parseInt(splitId[1]);
+        		var parentBranch = splitId[0].substring(1);
+        		var parentRow = parseInt(document.getElementById('baseTimeline'+parentBranch).style.left.split('p')[0]);
+        		if(Number.isNaN(parentRow)) {
+        			baseTimelineStyle.left = 100*row+'px';
+        		}
+        		else
+        			baseTimelineStyle.left = parentRow+100*row+'px';
+        	}
+		}
+		
+		function draw_nodes(timeline, branch, i, colors) {
+			
+			var htmlLine = "<ul class='base-timeline' id='baseTimeline" + i;
+			if(i==0)
+				htmlLine += "' style='padding: 15em 0em 2em 0em;'>";
+			else
+				htmlLine += "'>";
+			for(var j=0;j<branch.length;j++) {
+				var version = branch[j];
+				if(version==null)
+					continue;
+				htmlLine += "<li class='base-timeline__item'> <span class='circle' style='background-color:" + colors[i%10] + "' id='" + version.uid + "' onclick='setSelectedElement(event)'> <span class='tooltip' id='" + version.nodeId + "'>" + version.summary + "</span> </span> </li>";
+			}
+			htmlLine += "</ul>";
+			timeline.innerHTML += htmlLine;
+		}
+		
+		
+		function connect(div1, div2, color, thickness) {
+			var off1 = getOffset(div1);
+		    var off2 = getOffset(div2);
+		    
+		    var x1 = off1.left + off1.width;
+		    var y1 = off1.top + off1.height/2;
+		    
+		    var x2 = off2.left;
+		    var y2 = off2.top + off2.height/2;
+		    
+		    var length = Math.sqrt(((x2-x1) * (x2-x1)) + ((y2-y1) * (y2-y1)));
+
+		  
+		    var localX1 = -(x2-x1);
+		    var localY1 = off2.height/2 - (y2 - y1);
+
+		    var localX2 = 0;
+		    var localY2 = off1.height/2;
+		    
+		    
+		    var cx = ((localX1 + localX2) / 2) - (length / 2);
+		    var cy = ((localY1 + localY2) / 2) - (thickness / 2);
+		    
+		    var angle = Math.atan2((y1-y2),(x1-x2))*(180/Math.PI);
+		    
+		    var htmlLine = "<span style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+		    //alert(htmlLine);
+		    div2.innerHTML += htmlLine;
+		}
+		
+		function branch_connect(div1, div2, color, thickness) {
+			var off1 = getOffset(div1);
+		    var off2 = getOffset(div2);
+		    
+		    var x1 = off1.left + off1.width/2;
+		    var y1 = off1.top + off1.height;
+		    
+		    var x2 = off2.left + off2.width/2;
+		    var y2 = off2.top;
+		    
+		    var length = Math.sqrt(((x2-x1) * (x2-x1)) + ((y2-y1) * (y2-y1)));
+
+		    var localX1 = off2.width/2-(x2-x1);
+		    var localY1 = -(y2 - y1);
+
+		    var localX2 = off1.width/2;
+		    var localY2 = 0;
+		    
+		    
+		    var cx = ((localX1 + localX2) / 2) - (length / 2);
+		    var cy = ((localY1 + localY2) / 2) - (thickness / 2);
+		    
+		    var angle = Math.atan2((y1-y2),(x1-x2))*(180/Math.PI);
+		    
+		    var htmlLine = "<span style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+		    div2.innerHTML += htmlLine;
+		}
+
+		function getOffset( el ) {
+		    var rect = el.getBoundingClientRect();
+		    return {
+		        left: rect.left + window.pageXOffset,
+		        top: rect.top + window.pageYOffset,
+		        width: rect.width || el.offsetWidth,
+		        height: rect.height || el.offsetHeight
+		    };
+		}
+
+		function draw_lines(index, colors) {
+			var branch = branches[index];
+			if(index>0) {
+				branch_connect(document.getElementById(branch[0].parent), document.getElementById(branch[0].uid), colors[index%10], 2);
+			}
+		   	for (let i=1; i<branch.length; i++) {
+		   		if(branch[i]==null)
+		   			break;
+		   		let current = document.getElementById(branch[i].uid);
+		   		let parent = document.getElementById(branch[i-1].uid);
+		   		connect(parent, current, colors[index%10], 2);
+		   	
+		   	}
+		}
         	
 		$("#download").click(function () {
 			var fileContent = selectedVersion.content;

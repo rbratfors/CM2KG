@@ -105,7 +105,7 @@ public class HistoryUtility {
 		String date = "";
 		
 		try (Stream<String> lines = Files.lines(Paths.get(path))) {
-		    date = lines.skip(1 + version*9).findFirst().get();
+		    date = lines.skip(3 + version*9).findFirst().get();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -139,6 +139,8 @@ public class HistoryUtility {
 			if(current > max)
 				max = current;
 		}
+		if(max<1)
+			return 1;
 		return max;
 	}
 	
@@ -150,22 +152,24 @@ public class HistoryUtility {
 			numOfBranches = 0;
 			for(File dir : directories) {
 				numOfBranches++;
-				System.out.println(dir.toString());
 			}
 		} else {
 			System.out.println("null: " + historizationPath);
 		}
+		if(numOfBranches<1)
+			return 1;
 		return numOfBranches;
 	}
 
-	public float[] readUpdate(String update) {
+	public String readUpdate(String update) {
 		String[] s = update.split("\\s+");
 		newBranch = (s[0].equals("b"));
-		float[] coords = {Float.parseFloat(s[1])+2, Float.parseFloat(s[2])}; 
+		float[] coords = {Float.parseFloat(s[2])+2, Float.parseFloat(s[3])}; 
+		String uid = s[1];
 		if(!newBranch)
 			currentBranch = s[0];
 		System.out.println("READ: " + newBranch + " " + currentBranch);
-		return coords;
+		return uid;
 	}
 	public float getBranchY(String rect) {
 		String y = rect.split("\\s+")[0];
@@ -174,7 +178,6 @@ public class HistoryUtility {
 	
 	public String[] getNodeAttributes(File file) {
 		ArrayList<String> attributes = new ArrayList<String>();
-		System.out.println("YOOO");
 		try (BufferedReader br = new BufferedReader(new FileReader(file))){
 			String line = "";
 			while((line = br.readLine()) != null) {
@@ -194,5 +197,55 @@ public class HistoryUtility {
 			e.printStackTrace();
 		}
 		return attributes.toArray(new String[0]);
+	}
+	
+	public String getDelta(File file, String attribute) {
+		try (BufferedReader br = new BufferedReader(new FileReader(file))){
+			String line = "";
+			String deltaLine = "";
+			while((line = br.readLine()) != null) {
+				if(line.contains("<data key=\"Delta\">")) {
+					int i = line.indexOf("</data>");
+					deltaLine = line.substring(18, i);
+				}
+				if(line.contains(attribute)) {
+					System.out.println("DELTA: " + deltaLine);
+					return deltaLine;
+				}
+				
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "";
+	}
+	
+	public void createHistoryFile(String historyPath, String parentId) {
+		FileWriter fw;
+		try {
+			fw = new FileWriter(historyPath + "branch_history.txt", true);
+			BufferedWriter bw = new BufferedWriter(fw);
+		    bw.write(parentId);
+		    bw.newLine();
+		    bw.newLine();
+		    bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public String getParent(String path) {
+		String parent = "";
+		
+		try (Stream<String> lines = Files.lines(Paths.get(path))) {
+		    parent = lines.findFirst().get();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return parent;
 	}
 }

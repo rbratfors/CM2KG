@@ -357,11 +357,11 @@ public class Upload {
 			// System.out.println(content);
 			redirectAttributes.addFlashAttribute("uploadcontent", content);
 			File tmpFile = new File("src/main/resources/targetFile.xml");
-			redirectAttributes.addFlashAttribute("message", "TEST MESSAGE");
+			
 			try (OutputStream os = new FileOutputStream(tmpFile)) {
 				os.write(mFile.getBytes());
 			}
-			String historyPath = "export/" + model.getAttribute("currentHistory") + "/b0/";
+			String historyPath = "";
 			
 			archiUtil.setFile(tmpFile);
 			String fileUid = archiUtil.historyTransform(historyPath);
@@ -375,24 +375,40 @@ public class Upload {
 			System.out.println("VERSIONS: " + numOfVersions);
 			String date = "";
 			
+			
+			String historyName = model.getAttribute("currentHistory").toString();
+			int numOfBranches = historyUtil.countBranches(historyName);
+			int maxBranchSize = historyUtil.maxBranchSize(historyName);
+			System.out.println("NUUUUM: " + numOfBranches);
+			System.out.println("SIIIZE: " + maxBranchSize);
+			ModelGraph[][] bra = new ModelGraph[numOfBranches][maxBranchSize];
+			String[] parents = new String[numOfBranches];
 			ModelGraph[] versions = new ModelGraph[numOfVersions];
-			if(numOfVersions>1) {
-				versions = new ModelGraph[numOfVersions];
-				date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
-				versions[numOfVersions-1] = new ModelGraph(numOfVersions-1,fileUid,outputContent,date,"v","lastNode",true,name,0);
-				versionIDs = new String[versions.length];
-				String node = "firstNode";
-				for(int j=0;j<numOfVersions-1;j++) { 
-					date = historyUtil.getDate(historyPath + "branch_history.txt", (j));
-					System.out.println(numOfVersions-1-j);
-					versions[j] = new ModelGraph(j,"v"+(j),"",date,"v",node,true,name,0);
-					versionIDs[j] = versions[j].uid;
-					node = "";
+			for(int i=0;i<numOfBranches;i++) {
+				historyPath = "export/" + model.getAttribute("currentHistory") + "/b" + i + "/";
+				parents[i] = historyUtil.getParent(historyPath + "branch_history.txt");
+				if(numOfVersions>1) {
+					versions = new ModelGraph[numOfVersions];
+					date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
+					versions[numOfVersions-1] = new ModelGraph(numOfVersions-1,fileUid,outputContent,date,"v","lastNode",true,name,0,"");
+					versionIDs = new String[versions.length];
+					String node = "firstNode";
+					for(int j=0;j<numOfVersions-1;j++) { 
+						date = historyUtil.getDate(historyPath + "branch_history.txt", (j));
+						System.out.println(numOfVersions-1-j);
+						versions[j] = new ModelGraph(j,"b0"+"v"+(j),"",date,"v",node,true,name,0,"");
+						versionIDs[j] = versions[j].uid;
+						node = "";
+					}
+					versions[0].parent = parents[i];
+					bra[i] = versions;
+				} else {
+					versions = new ModelGraph[1];
+					date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
+					versions[0] = new ModelGraph(0,"b0v0",outputContent,date,"v","firstNode",true,name,0,"");
+					versions[0].parent = parents[i];
+					bra[i] = versions;
 				}
-			} else {
-				versions = new ModelGraph[1];
-				date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
-				versions[0] = new ModelGraph(0,fileUid,outputContent,date,"v","firstNode",true,name,0);
 			}
 			redirectAttributes.addFlashAttribute("current", versions[numOfVersions-1]);
 			redirectAttributes.addFlashAttribute("versions", versions);
@@ -425,6 +441,8 @@ public class Upload {
 			    model.addAttribute("modelVersions", versions);
 			    System.out.println("versions set");
 			}
+			
+			model.addAttribute("branches", bra);
 			
 			return "redirect:/upload/historypreview";
 		} catch (IOException e) {
@@ -464,6 +482,8 @@ public class Upload {
 			// redirectAttributes.addFlashAttribute("sum", a + b);
 			
 			try {
+				HistoryUtility historyUtil = new HistoryUtility();
+				ArchiUtility archiUtil = new ArchiUtility();
 				System.out.println("archi history");
 				
 				boolean newHistory = false;
@@ -488,13 +508,12 @@ public class Upload {
 				if(newHistory) {
 					model.addAttribute("currentHistory", newHistoryName);
 					new File("export/"+newHistoryName+"/b0/").mkdirs();
+					historyUtil.createHistoryFile("export/"+newHistoryName+"/b0/", "root");
 				} else {
 					model.addAttribute("currentHistory", name);
 				}
 				
 				System.out.println(model.getAttribute("currentHistory"));
-				HistoryUtility historyUtil = new HistoryUtility();
-				ArchiUtility archiUtil = new ArchiUtility();
 				
 				File[] histories = historyUtil.getHistories();
 				String[] historyNames = historyUtil.getHistoryNames(histories);
@@ -530,37 +549,44 @@ public class Upload {
 				int numOfBranches = historyUtil.countBranches(historyName);
 				int maxBranchSize = historyUtil.maxBranchSize(historyName);
 				System.out.println("NUUUUM: " + numOfBranches);
-				System.out.println("SIIIZE: " + numOfBranches);
-				int branch = 0;
+				System.out.println("SIIIZE: " + maxBranchSize);
 				ArrayList<ArrayList<ModelGraph>> branches = new ArrayList<ArrayList<ModelGraph>>();
 				ModelGraph[][] bra = new ModelGraph[numOfBranches][maxBranchSize];
-				for(int i=0;i<numOfBranches;i++) {
+				String[] parents = new String[numOfBranches];
+ 				for(int i=0;i<numOfBranches;i++) {
 					historyPath = "export/" + model.getAttribute("currentHistory") + "/b" + i + "/";
 					int numOfVersionsInBranch = archiUtil.countVersionsInFolder(historyPath);
 					ArrayList<ModelGraph> versions = new ArrayList<ModelGraph>();
 					ModelGraph[] vs = new ModelGraph[numOfVersionsInBranch];
+					parents[i] = historyUtil.getParent(historyPath + "branch_history.txt");
 					if(numOfVersionsInBranch>1) {
 						String node = "firstNode";
 						for(int j=0;j<numOfVersionsInBranch;j++) {
 							date = historyUtil.getDate(historyPath + "branch_history.txt", (j));
+							System.out.println(historyPath + " yaa " + date);
 							contentFile = new File(historyPath + "v"+ j + ".graphml");
 							outputContent = historyUtil.readContent(contentFile);
-							versions.add(new ModelGraph(j,"v"+(j),outputContent,date,"v",node,true,historyName,branch));
-							vs[j] = new ModelGraph(j,"v"+(j),outputContent,date,"v",node,true,historyName,branch);
+							versions.add(new ModelGraph(j,"b"+i+"v"+(j),outputContent,date,"v",node,true,historyName,i,""));
+							vs[j] = new ModelGraph(j,"b"+i+"v"+(j),outputContent,date,"v",node,true,historyName,i,"");
 							node = "";
 						}
+						vs[0].parent = parents[i];
 						branches.add(versions);
 						bra[i] = vs;
 						System.out.println("added branch of size: " + versions.size());
 					} else {
-						date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersionsInBranch-1);
-						versions.add(new ModelGraph(0,"v0",outputContent,date,"v","firstNode",true,historyName,branch));
+						date = historyUtil.getDate(historyPath + "branch_history.txt", (0));
+						contentFile = new File(historyPath + "v0.graphml");
+						outputContent = historyUtil.readContent(contentFile);
+						ModelGraph v = new ModelGraph(0,"b"+i+"v0",outputContent,date,"v","firstNode",true,historyName,i,"");
+						v.parent = parents[i];
+						versions.add(v);
 						branches.add(versions);
-						bra[i][0] = new ModelGraph(0,"v0",outputContent,date,"v","firstNode",true,historyName,branch);
+						bra[i][0] = v;
 						System.out.println("added one branch of size: " + versions.size());
 					}
 				}
-				ArrayList<ModelGraph> current = branches.get(branch);
+				//ArrayList<ModelGraph> current = branches.get(0);
 	 			redirectAttributes.addFlashAttribute("current", bra[0][maxBranchSize-1]);
 				redirectAttributes.addFlashAttribute("versions", bra[0]);
 				redirectAttributes.addFlashAttribute("branchList", bra);
@@ -568,6 +594,13 @@ public class Upload {
 				model.addAttribute("branches", bra);
 				
 				model.addAttribute("modelVersions", bra[0]);
+				
+				model.addAttribute("filter","None");
+				
+				for(String p : parents) {
+					System.out.println("SSS " + p);
+				}
+				model.addAttribute("parents", parents);
 				
 				for(ArrayList<ModelGraph> mg : branches) {
 					System.out.println("b: " + branches.indexOf(mg));
@@ -644,21 +677,23 @@ public class Upload {
 			ArchiUtility archiUtil = new ArchiUtility();
 			String content = new String(mFile.getBytes());
 			float[] branchCoords = new float[2];
-			
+			String parentId = "";
 			if(!updateAction.isEmpty()) {
-				branchCoords = historyUtil.readUpdate(updateAction);
+				parentId = historyUtil.readUpdate(updateAction);
 			}
-			System.out.println("RECT: " + branchCoords[0] + ","  + branchCoords[1]);
+			System.out.println("parentId: " + parentId);
 			
 			boolean createNewBranch = historyUtil.newBranch;
 			String historyPath = "";
 			int numOfBranches = historyUtil.countBranches(historyName);
+			System.out.println("parentId: " + numOfBranches);
 			
-			model.addAttribute("branches", numOfBranches);
 			if(createNewBranch) {
 				new File("export/"+historyName+"/b"+(numOfBranches)).mkdirs();
 				historyPath = "export/" + historyName+"/b"+(numOfBranches)+"/";
 				historyUtil.currentBranch = "b"+(numOfBranches);
+				historyUtil.createHistoryFile(historyPath, parentId);
+				numOfBranches++;
 			} else {
 				historyPath = "export/" + model.getAttribute("currentHistory") + "/"+historyUtil.currentBranch+"/";
 			}
@@ -686,44 +721,58 @@ public class Upload {
 			System.out.println("VERSIONS: " + numOfVersions);
 			String date = "";
 			File contentFile;
-			int branch = Integer.parseInt(historyUtil.currentBranch.substring(1));
+			
+			int maxBranchSize = historyUtil.maxBranchSize(historyName);
+			System.out.println("NUUUUM: " + numOfBranches);
+			System.out.println("SIIIZE: " + maxBranchSize);
 			ArrayList<ArrayList<ModelGraph>> branches = new ArrayList<ArrayList<ModelGraph>>();
+			ModelGraph[][] bra = new ModelGraph[numOfBranches][maxBranchSize];
+			String[] parents = new String[numOfBranches];
 			for(int i=0;i<numOfBranches;i++) {
 				historyPath = "export/" + model.getAttribute("currentHistory") + "/b" + i + "/";
-				numOfVersions = archiUtil.countVersionsInFolder(historyPath);
+				int numOfVersionsInBranch = archiUtil.countVersionsInFolder(historyPath);
 				ArrayList<ModelGraph> versions = new ArrayList<ModelGraph>();
-				if(numOfVersions>1) {
-					date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
-					versions.add(new ModelGraph(numOfVersions-1,fileUid,outputContent,date,"v","lastNode",true,historyName,branch));
+				ModelGraph[] vs = new ModelGraph[numOfVersionsInBranch];
+				parents[i] = historyUtil.getParent(historyPath + "branch_history.txt");
+				if(numOfVersionsInBranch>1) {
 					String node = "firstNode";
-					for(int j=0;j<numOfVersions-1;j++) { 
+					for(int j=0;j<numOfVersionsInBranch;j++) {
 						date = historyUtil.getDate(historyPath + "branch_history.txt", (j));
 						contentFile = new File(historyPath + "v"+ j + ".graphml");
 						outputContent = historyUtil.readContent(contentFile);
-						versions.add(new ModelGraph(j,"v"+(j),outputContent,date,"v",node,true,historyName,branch));
+						versions.add(new ModelGraph(j,"b"+i+"v"+(j),outputContent,date,"v",node,true,historyName,i,""));
+						vs[j] = new ModelGraph(j,"b"+i+"v"+(j),outputContent,date,"v",node,true,historyName,i,"");
 						node = "";
+						if(j==0) {
+							vs[j].parent = parents[i];
+						}
 					}
 					branches.add(versions);
+					bra[i] = vs;
 					System.out.println("added branch of size: " + versions.size());
 				} else {
-					date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1);
-					versions.add(new ModelGraph(0,fileUid,outputContent,date,"v","firstNode",true,historyName,branch));
-					branches.add(versions);
+					date = historyUtil.getDate(historyPath + "branch_history.txt", (0));
+					contentFile = new File(historyPath + "v0.graphml");
+					outputContent = historyUtil.readContent(contentFile);
+					ModelGraph v = new ModelGraph(0,"b"+i+"v0",outputContent,date,"v","firstNode",true,historyName,i,"");
+					v.parent = parents[i];
+					versions.add(v);
+					bra[i][0] = v;
 					System.out.println("added one branch of size: " + versions.size());
 				}
 			}
-			ArrayList<ModelGraph> current = branches.get(branch);
- 			redirectAttributes.addFlashAttribute("current", current.get(current.size() -1));
-			redirectAttributes.addFlashAttribute("versions", current);
-			redirectAttributes.addFlashAttribute("branchList", branches);
+			//ArrayList<ModelGraph> current = branches.get(0);
+			redirectAttributes.addFlashAttribute("current", bra[0][maxBranchSize-1]);
+			redirectAttributes.addFlashAttribute("versions", bra[0]);
+			redirectAttributes.addFlashAttribute("branchList", bra);
 			
-			model.addAttribute("branches", branches);
-			for(ArrayList<ModelGraph> mg : branches) {
-				System.out.println("b: " + branches.indexOf(mg));
-				for(ModelGraph m : mg) {
-					System.out.println(m.version);
-				}
-			}
+			model.addAttribute("branches", bra);
+			
+			model.addAttribute("modelVersions", bra[0]);
+			
+			model.addAttribute("parents", parents);
+			
+			model.addAttribute("filter","None");
 			
 			String[] nAttr = archiUtil.getNodeAttributes();
 			String[] eAttr = archiUtil.getEdgeAttributes();
@@ -745,12 +794,6 @@ public class Upload {
 			redirectAttributes.addFlashAttribute("attributes", nAttr);
 			fd.printContent();
 			
-			System.out.println("checking versions");
-			if (!model.containsAttribute("versions")) {
-				System.out.println("setting versions");
-			    model.addAttribute("modelVersions", current);
-			    System.out.println("versions set");
-			}
 			model.addAttribute("formdata", fd);
 			
 			historyUtil.saveFile("export/current.graphml", outputContent);
@@ -769,6 +812,9 @@ public class Upload {
 		System.out.println("action:" + action);
 		System.out.println(model.toString());
 		System.out.println("vers:" + vers);
+		String verString = "v" + vers.split("v")[1];
+		int branchNumber = Integer.parseInt(vers.split("v")[0].substring(1));
+		System.out.println("verstring:" + verString);
 		formdata.printContent();
 		String historyName = model.getAttribute("currentHistory").toString();
 		Date d = new Date();
@@ -777,55 +823,114 @@ public class Upload {
 		HistoryUtility historyUtil = new HistoryUtility();
 		
 		ArchiUtility archiUtil = new ArchiUtility();
-		String content = archiUtil.graphML2String(historyPath + vers + ".graphml");
-		
-		int i = vers.indexOf("_v");
+		String content = archiUtil.graphML2String(historyPath + verString + ".graphml");
 		ArrayList<Integer> vArray = new ArrayList<Integer>();
 		String output = content;
 		
 		int numOfBranches = historyUtil.countBranches(historyName);
+		System.out.println("vers:" + vers);
+		int maxBranchSize = historyUtil.maxBranchSize(historyName);
 		System.out.println("NUM: " + numOfBranches);
 		System.out.println(model.getAttribute("branches"));
+		ModelGraph[][] bra = new ModelGraph[numOfBranches][maxBranchSize];
 		if(action != null) {
-			int v = Integer.parseInt(vers.substring(i+2));
-			// Fetch graph content
-			int numOfVersions = archiUtil.countVersionsInFolder(historyPath);
-			ModelGraph[] versions = new ModelGraph[numOfVersions];
+			int v = Integer.parseInt(verString.substring(1));
 			
 			StringBuilder nodes = new StringBuilder();
-			if(action.equals("all"))
-			{
-				
+			if(action.equals("delta")) {
 				String nodeID = "";
 				Date updateDate = new Date();
-				for(int k=0;k<historyUtil.countBranches(action);k++) {
-					
-				}
-				for(int j=0;j<versions.length;j++) {
-					String filename = historyPath + "v"+(j) + ".graphml";
-					content = archiUtil.graphML2String(filename);
-					Querying query = new Querying(content, j);
-					
-					boolean matched = true;
-					
-					for(int k=0;k<nodeAttributes.length;k++) {
-						String value = formdata.getAttributes()[k];
-						if(!value.isBlank()) {
-							String node = query.returnNodes(nodeAttributes[k],value);
-							if(!node.isBlank()) {
-								if(updateDate.compareTo(query.updateDate)!=0) {
-									nodes.append(node);
-									updateDate = query.updateDate;
-									vArray.add(j);
-									System.out.println("new update");
+				String[] parents = new String[numOfBranches];
+				for(int i=0;i<numOfBranches;i++) {
+					historyPath = "export/" + model.getAttribute("currentHistory")+"/b"+i+"/";
+					System.out.println("history path: " + historyPath);
+					int numOfVersions = archiUtil.countVersionsInFolder(historyPath);
+					System.out.println("versions: " + numOfVersions);
+					ModelGraph[] versions = new ModelGraph[numOfVersions];
+					parents[i] = historyUtil.getParent(historyPath + "branch_history.txt");
+					for(int j=0;j<versions.length;j++) {
+						String filename = historyPath + "v"+(j) + ".graphml";
+						content = archiUtil.graphML2String(filename);
+						Querying query = new Querying(content, j);
+						
+						boolean matched = true;
+						String delta = "";
+						for(int k=0;k<nodeAttributes.length;k++) {
+							String value = formdata.getAttributes()[k];
+							System.out.println("VALUE: " + value);
+							if(!value.isBlank()) {
+								String node = query.returnNodes(nodeAttributes[k],value);
+								if(!node.isBlank()) {
+									if(updateDate.compareTo(query.updateDate)!=0) {
+										nodes.append(node);
+										updateDate = query.updateDate;
+										vArray.add(j);
+										System.out.println("new update");
+									}
+									delta = historyUtil.getDelta(new File(filename), value);
+								} else {
+									matched = false;
+									delta = "Deleted";
 								}
-							} else {
-								matched = false;
 							}
 						}
+						String date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1-j);
+						System.out.println(j + " M " + matched);
+						versions[j] = new ModelGraph(j,"b"+i+"v"+(j),content,date,"v","",matched,historyName,0,delta);
+						versions[j].filterDelta = delta;
+						if(j==0) {
+							versions[j].parent = parents[i];
+						}
 					}
-					String date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1-j);
-					versions[j] = new ModelGraph(j,"v"+(j),content,date,"v","",matched,historyName,0);
+					versions[0].parent = parents[i];
+					bra[i] = versions;
+				}
+			}
+			else if(action.equals("all"))
+			{
+				String nodeID = "";
+				Date updateDate = new Date();
+				String[] parents = new String[numOfBranches];
+				for(int i=0;i<numOfBranches;i++) {
+					historyPath = "export/" + model.getAttribute("currentHistory")+"/b"+i+"/";
+					System.out.println("history path: " + historyPath);
+					int numOfVersions = archiUtil.countVersionsInFolder(historyPath);
+					System.out.println("versions: " + numOfVersions);
+					ModelGraph[] versions = new ModelGraph[numOfVersions];
+					parents[i] = historyUtil.getParent(historyPath + "branch_history.txt");
+					for(int j=0;j<versions.length;j++) {
+						String filename = historyPath + "v"+(j) + ".graphml";
+						content = archiUtil.graphML2String(filename);
+						Querying query = new Querying(content, j);
+						
+						boolean matched = true;
+						String delta = "";
+						for(int k=0;k<nodeAttributes.length;k++) {
+							String value = formdata.getAttributes()[k];
+							System.out.println("VALUE: " + value);
+							if(!value.isBlank()) {
+								String node = query.returnNodes(nodeAttributes[k],value);
+								if(!node.isBlank()) {
+									if(updateDate.compareTo(query.updateDate)!=0) {
+										nodes.append(node);
+										updateDate = query.updateDate;
+										vArray.add(j);
+										System.out.println("new update");
+									}
+									delta = historyUtil.getDelta(new File(filename), value);
+								} else {
+									matched = false;
+								}
+							}
+						}
+						String date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1-j);
+						System.out.println(j + " M " + matched);
+						versions[j] = new ModelGraph(j,"b"+i+"v"+(j),content,date,"v","",matched,historyName,0,delta);
+						if(j==0) {
+							versions[j].parent = parents[i];
+						}
+					}
+					bra[i] = versions;
 				}
 				/*
 				String nodeID = "";
@@ -860,6 +965,7 @@ public class Upload {
 				model.addAttribute("current", all);
 				output = historyUtil.nodesToGraphML(content, nodes.toString(), vArray, nodeID);*/
 			} else {
+				/*
 				Querying query = new Querying(content);
 				for(int j=0;j<nodeAttributes.length;j++) {
 					String value = formdata.getAttributes()[j];
@@ -870,23 +976,24 @@ public class Upload {
 					for(int j=0;j<versions.length;j++) { 
 						String date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1-j);
 						if(numOfVersions-1-j==v) {
-							versions[j] = new ModelGraph(v,vers,content,date,"v","",true,historyName,0);
+							versions[j] = new ModelGraph(v,vers,content,date,"v","",true,historyName,0,"");
 						}
 						else
-							versions[j] = new ModelGraph(numOfVersions-1-j,"v"+(numOfVersions-1-j),"",date,"v","",true,historyName,0);
+							versions[j] = new ModelGraph(numOfVersions-1-j,"b"+branchNumber+"v"+(numOfVersions-1-j),"",date,"v","",true,historyName,0,"");
 					}
 				} else {
 					for(int j=0;j<versions.length;j++) { 
 						String date = historyUtil.getDate(historyPath + "branch_history.txt", numOfVersions-1-j);
 						if(numOfVersions-1-j==v)
-							versions[j] = new ModelGraph(v,vers,nodes.toString(),date,"v","",true,historyName,0);
+							versions[j] = new ModelGraph(v,vers,nodes.toString(),date,"v","",true,historyName,0,"");
 						else
-							versions[j] = new ModelGraph(numOfVersions-1-j,"v"+(numOfVersions-1-j),"",date,"v","",true,historyName,0);
+							versions[j] = new ModelGraph(numOfVersions-1-j,"b"+branchNumber+"v"+(numOfVersions-1-j),"",date,"v","",true,historyName,0,"");
 					}
 				}
 				vArray.add(numOfVersions-1-v);
 				output = historyUtil.nodesToGraphML(content, nodes.toString(), vArray, query.getNodeID());
 				model.addAttribute("current", versions[numOfVersions-1-v]);
+				*/
 			}
 			
 			try {
@@ -899,15 +1006,15 @@ public class Upload {
 			System.out.println("checking versions");
 			if (!model.containsAttribute("versions")) {
 				System.out.println("setting versions");
-			    model.addAttribute("modelVersions", versions);
+			    model.addAttribute("modelVersions", bra[0]);
 			    System.out.println("versions set");
 			}
 			
+			model.addAttribute("branches", bra);
+			model.addAttribute("filter",action);
+			
 			System.out.println("version: " + vers);	
-			System.out.println("current: " + versions[numOfVersions-1-v].version);
 			model.addAttribute("fileUid", vers);
-			model.addAttribute("current", versions[numOfVersions-1]);
-			model.addAttribute("versions", versions);
 			model.addAttribute("formdata", formdata);
 			model.addAttribute("attributeNames", nodeAttributes);
 			model.addAttribute("attributes", formdata.getAttributes());
