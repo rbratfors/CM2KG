@@ -36,8 +36,7 @@ public class Querying {
 	}
 	
 	//REDO
-	public String returnNodes(String attributeName, String attributeValue) {
-		String[] lines = content.split("\r\n|\r|\n");
+	public String returnNodes(String attributeName, String attributeValue, String[] lines) {
 		int i = 0;
 		int idIndex = 0;
 		ArrayList<Integer> nameIndices = new ArrayList<Integer>();
@@ -46,6 +45,7 @@ public class Querying {
 				idIndex = i;
 			if(l.contains("<data key=\"" + attributeName + "\">" + attributeValue + "</data>")) {
 				nameIndices.add(idIndex);
+				break;
 			}
 			i++;
 		}
@@ -70,12 +70,14 @@ public class Querying {
 					break;
 				tmp.add(lines[l]);
 			}
+			
 			String[] nodeContent = tmp.toArray(new String[0]);
-			dateStr = lines[index+1].substring(23, 39);
-			for(String n : nodeContent) {
-				nodes += n + "\n";
-			}
+			if(dateStr.isEmpty())
+				dateStr = lines[index+1].substring(23, 39);
 			//nodes[j] = node;
+			nodes = nodeContent[0];
+			if(!nodes.isBlank())
+				break;
 		}
 		try {
 			updateDate = formatter.parse(dateStr);

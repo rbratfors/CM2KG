@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+	
+<style>
+mark.red { 
+  background-color: red;
+  color: black;
+}
+mark.green { 
+  background-color: green;
+  color: black;
+}
+p {
+	margin:0;
+	line-height: .5em;
+}
+</style>
+
+<head>
+	<title>EA Graph Analysis</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+	<div class="jumbotron text-center">
+		<h1>CM2KG Conceptual Model to Knowledge Graph</h1>
+		<p>Transform your conceptual model (Archi, ADOxx, Papyrus ...) to GraphML and gain insights about your model by apply graph based-anaylsis.</p>
+	</div>
+	
+	<div class="container">
+		<div class="row">
+			<div class="col-sm-3">
+				<h3>Step 1</h3>
+				<p>Upload your model.</p>
+			</div>
+			<div class="col-sm-3">
+				<h3>Step 2</h3>
+				<p>Your model is converted..</p>
+
+			</div>
+			<div class="col-sm-3">
+				<h3>Step 3</h3>
+				<p>Take your GraphML model.</p>
+			</div>
+			
+			<div class="col-sm-3">
+				<h3>Step 4</h3>
+				<p>Gain insight about its history.</p>
+			</div>
+		</div>
+
+
+	</div>
+
+	<div class="row" style="margin-left: 20px; margin-right: 20px;">
+		<div class="col-sm-8">
+			<div class="form-group">
+				<label for="exampleFormControlTextarea1">Current version</label>
+				<pre id="current" lang="xml" th:text="${current.content}" th:value="${current.version}"></pre>
+			</div>
+		</div>
+		
+		<div class="row" style="width:600px">
+			<div class="col-sm-4">
+				<form th:action="@{/upload/querycurrent}" method="post" enctype="multipart/form-data">
+						<div class="form-group">
+							<label for="startdate">Earliest Update:</label><br>
+							<input type="date" name="startdate" id="startdate">
+							<label for="timerange">Latest Update:</label><br>
+							<input type="date" name="enddate" id="enddate">
+							<label for="timerange">Node Name:</label><br>
+							<input type="text" name="nodename" id="nodename">
+							<label for="timerange">ClassName:</label><br>
+							<input type="text" name="classname" id="classname">
+							<label for="smell">Smell:</label><br>
+							<select id="smell" name="smell">
+							  	<option value=""></option>
+								<option value="s1">Smell 1</option>
+								<option value="s2">Smell 2</option>
+								<option value="s3">Smell 3</option>
+							</select><br>
+							<label for="function">Function:</label>
+							<select id="function" name="function">
+								<option value=""></option>
+								<option value="f1">Function 1</option>
+								<option value="f2">Function 2</option>
+								<option value="f3">Function 3</option>
+							</select><br>
+						</div>
+						
+						<div style="width:400px">
+							<button type="submit" name="action" id="queryCurrentBtn" th:formaction="@{/upload/querycurrent}" class="btn btn-primary">Query Current</button>
+							<button type="submit" name="action" id="queryAllBtn" th:formaction="@{/upload/queryall}" class="btn btn-primary">Query All</button>
+						</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	
+</body>
+
+<script>
+	$("#download").click(function () {
+		var fileContent = $("#transformedPreview").text();
+		var bb = new Blob([fileContent], {type: 'text/plain'});
+		var a = document.createElement('a');
+		a.download = 'output.graphml';
+		a.href = window.URL.createObjectURL(bb);
+		a.click();
+	});
+</script>
+
+<script>
+    window.onload = function() {
+        var text = document.getElementById('transformedPreview');
+    }
+</script>
+
+<script>
+	function changeColor(newColor) {
+		var text = document.getElementById('transformedPreview');
+		text.style.color = newColor;
+	}
+</script>
+
+<script>
+	function showChanges() {
+		var arr = $("#current").text();
+		document.getElementById('transformedPreview').innerHTML = arr;
+	}
+</script>
+
+
+</html>

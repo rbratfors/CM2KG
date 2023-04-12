@@ -15,6 +15,7 @@ import com.archimatetool.model.IArchimateModel;
 
 import at.ac.tuwien.big.msm.cmgba.graphml.GraphML;
 import graphML.GraphMLModelExporter;
+import graphML.GraphMLModelHistoryExporter;
 import transformations.Archimate2GraphML;
 
 public class ArchiUtility {
@@ -29,6 +30,7 @@ public class ArchiUtility {
 	String modelID;
 	String[] nodeAttributes;
 	String[] edgeAttributes;
+	public int nodeC, edgeC, nodes, edges;
 	
 	long startTime = System.currentTimeMillis();
 	
@@ -69,7 +71,7 @@ public class ArchiUtility {
 
 				// if no filename is provided do not create file
 				if (!filename.equals(""))
-					outputFile = modelExporter.saveFile(filename, false);
+					outputFile = modelExporter.saveFile(filename);
 
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
@@ -96,8 +98,8 @@ public class ArchiUtility {
             archi2Graphml.convert();
             version = countVersionsInFolder(historyPath);
     		GraphML graphml = archi2Graphml.getGraphml();
-    		GraphMLModelExporter modelExporter;
-            modelExporter = new GraphMLModelExporter(graphml, modelFile, modelName, modelID, version, historyPath);
+    		GraphMLModelHistoryExporter modelExporter;
+            modelExporter = new GraphMLModelHistoryExporter(graphml, modelFile, modelName, modelID, version, historyPath);
     		try {
     			modelExporter.exportGraph();
     			graphXML = modelExporter.getGraphXML();
@@ -120,10 +122,8 @@ public class ArchiUtility {
     			
     			if(!modelExporter.compareGraphs(historyPath,false)) {
     				fileUid = "v" + version;
-        			System.out.println("fileUid: " + fileUid);
         			filename = historyPath + fileUid + ".graphml";
     				outputFile = modelExporter.saveFile(filename, true);
-    				System.out.println("Saved to export: " + filename);
     				version++;
     			} else if(version>0){
     				//Graph has no changes since last upload
@@ -131,7 +131,12 @@ public class ArchiUtility {
     			} else {
     				fileUid = modelID + "_v0";
     			}
+    			nodeC = modelExporter.nodeComparisons;
+    			edgeC = modelExporter.edgeComparisons;
+    			nodes = modelExporter.numOfNodes;
+    			edges = modelExporter.numOfEdges;
     			graphXML = modelExporter.getGraphOutput();
+    			
     			return fileUid;
     		} catch (IOException e1) {
     			// TODO Auto-generated catch block

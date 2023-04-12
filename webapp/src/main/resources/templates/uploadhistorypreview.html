@@ -179,7 +179,6 @@ A hover sample effect is added as well as an active state*/
     counter-reset: number -1; /* number 2021*/
     position: relative;
     display: flex;
-    z-index: 2;
     flex-flow: nowrap;
 }
 
@@ -202,7 +201,6 @@ A hover sample effect is added as well as an active state*/
     counter-reset: number -1; /* number 2021*/
     position: relative;
     display: flex;
-    z-index: 2;
     flex-flow: nowrap;
   	top: -368px;
   	left: 438px;
@@ -258,7 +256,7 @@ A hover sample effect is added as well as an active state*/
         background-color: steelblue;
         color: white;
         font-weight: bold;
-        box-sizing: border-box;      
+        box-sizing: border-box;
 }
 
 .base-timeline__item .circle::before {
@@ -545,7 +543,7 @@ A hover sample effect is added as well as an active state*/
 		<xmp id="inputPreview"></xmp>
         </div>
         <div id="box3">
-        	<h4 style="font-family: Arial; margin-top:0.5em;"><center>Filter Model Attributes</center></h4>
+        	<h4 style="font-family: Arial; margin-top:0.5em;"><center>Querying</center></h4>
             <form th:action="@{/upload/historypreview}" method="post" enctype="multipart/form-data" th:object="${formdata}">
 						<div class="form-group">
 							<label for="startdate">Earliest Update:</label><br>
@@ -571,20 +569,12 @@ A hover sample effect is added as well as an active state*/
 								<option value="f1">Placeholder 1</option>
 								<option value="f2">Placeholder 2</option>
 								<option value="f3">Placeholder 3</option>
-							</select><br>
-							<label for="vers">Version:</label>
-							<select class="form-control" id="vers" name="vers">
-						        <option th:each="version : ${versions}"
-									th:value="${version.uid}"
-									th:text="${version.uid}">
-								</option>
-						    </select>
-						    
+							</select>
 						</div>
 						
 						<div style="display:flex;justify-content:center;justify-content:space-evenly">
-							<button type="submit" name="action" id="queryCurrentBtn" th:value="delta" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Filter on change</button>
-							<button type="submit" name="action" id="queryAllBtn" th:value="all" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Filter on presence</button>
+							<button type="submit" name="action" id="queryCurrentBtn" th:value="delta" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query changes</button>
+							<button type="submit" name="action" id="queryAllBtn" th:value="all" th:formaction="@{/upload/historypreview}" class="btn btn-primary" style="background-color:steelblue;color:white;border:steelblue">Query presence</button>
 						</div>
 				</form>
         </div>
@@ -623,11 +613,11 @@ A hover sample effect is added as well as an active state*/
         }
         
         function branchButton() {
-        	document.getElementById("branchBtn").value = "b " + selectedVersion.uid + " " + selectedRect.left + " " + selectedRect.top;
+        	document.getElementById("branchBtn").value = "b " + selectedVersion.uid;
         }
         
         function updateButton() {
-        	document.getElementById("updateBtn").value = "b" + selectedVersion.branch + " " + selectedVersion.uid + " " + selectedRect.left + " " + selectedRect.top;
+        	document.getElementById("updateBtn").value = "b" + selectedVersion.branch + " " + selectedVersion.uid;
         }
         
         function setSelectedElement(e) {
@@ -660,30 +650,14 @@ A hover sample effect is added as well as an active state*/
         	elStyle.content = version.version;
         }
         
-        function test(item) {
-        	item.forEach(test2());
-        }
-        
-        function test2(item) {
-        	alert(item.version);
-        }
-        
         function init() {
         	const colors = ["steelblue", "goldenrod", "darkorchid", "darkkhaki", "cornflowerblue", "lightpink", "mediumseagreen", "olive", "salmon", "palevioletred"];
         	getBranches(colors);
         	
         	
         	document.getElementById('inputPreview').innerHTML = selectedVersion.content;
-        	var versionNumber = selectedVersion.version;
+        	var versionNumber = selectedVersion.uid;
         	document.getElementById('selectedVersionText').innerHTML = "Selected Version: " + versionNumber; 
-        }
-        
-        function testy(version) {
-        	version.forEach(testy2);
-        }
-        
-        function testy2(version) {
-        	alert(version.version);
         }
         
         function colorTest() {
@@ -705,17 +679,17 @@ A hover sample effect is added as well as an active state*/
         }
         
         function scrollToFirst() {
-        	let first = modelVersions[0].version;
+        	let first = modelVersions[0].uid;
         	document.getElementById(first).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
         
         function scrollToLast() {
-        	let last = modelVersions[modelVersions.length-1].version;
+        	let last = modelVersions[modelVersions.length-1].uid;
         	document.getElementById(last).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
         
         function scrollToSelected() {
-        	document.getElementById(selectedVersion.version).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        	document.getElementById(selectedVersion.uid).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
         
         function scrollToSearched() {
@@ -894,7 +868,6 @@ A hover sample effect is added as well as an active state*/
 		    var angle = Math.atan2((y1-y2),(x1-x2))*(180/Math.PI);
 		    
 		    var htmlLine = "<span style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
-		    //alert(htmlLine);
 		    div2.innerHTML += htmlLine;
 		}
 		
@@ -922,7 +895,7 @@ A hover sample effect is added as well as an active state*/
 		    
 		    var angle = Math.atan2((y1-y2),(x1-x2))*(180/Math.PI);
 		    
-		    var htmlLine = "<span style='padding:0px; margin:0px; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
+		    var htmlLine = "<span style='padding:0px; margin:0px; position: absolute; z-index: 0; height:" + thickness + "px; background-color:" + color + "; line-height:1px; position:absolute; left:" + cx + "px; top:" + cy + "px; width:" + length + "px; -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />";
 		    div2.innerHTML += htmlLine;
 		}
 
